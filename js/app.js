@@ -20,6 +20,9 @@ window.__app = app;
 window.__sound = sound;
 window.addEventListener('fx-done', () => { if (app.client?.pub) setBgm(app.client.pub); });
 const DEMO = params.get('demo') === '1';
+const STANDALONE = matchMedia('(display-mode: standalone), (display-mode: fullscreen)').matches || navigator.standalone === true;
+const isFull = () => !!(document.fullscreenElement || document.webkitFullscreenElement);
+['fullscreenchange', 'webkitfullscreenchange'].forEach((ev) => document.addEventListener(ev, () => renderHeader()));
 const AUTO = params.get('auto') === '1';
 const IS_PC = matchMedia('(pointer: fine)').matches && !('ontouchstart' in window) && Math.min(screen.width, screen.height) >= 700;
 const OWNER_TOKEN = params.get('o') || null;
@@ -35,6 +38,8 @@ const icon = {
   sound: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   mute: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 9l5 6M21 9l-5 6" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
   help: '<svg viewBox="0 0 24 24" width="20" height="20"><circle cx="12" cy="12" r="9.5" fill="none" stroke="currentColor" stroke-width="1.8"/><path d="M9.3 9.4a2.8 2.8 0 1 1 3.9 2.6c-.8.4-1.2 1-1.2 1.9v.6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/><circle cx="12" cy="17.3" r="1.1" fill="currentColor"/></svg>',
+  full: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
+  unfull: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M9 4v5H4M15 4v5h5M9 20v-5H4M15 20v-5h5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"/></svg>',
   globe: '<svg viewBox="0 0 24 24" width="18" height="18"><circle cx="12" cy="12" r="9" fill="none" stroke="currentColor" stroke-width="1.6"/><path d="M3 12h18M12 3c3 3.2 3 14.8 0 18M12 3c-3 3.2-3 14.8 0 18" fill="none" stroke="currentColor" stroke-width="1.6"/></svg>',
   crown: '<svg viewBox="0 0 24 24" width="14" height="14"><path d="M3 18l2-10 5 5 2-7 2 7 5-5 2 10z" fill="currentColor"/></svg>',
 };
@@ -210,13 +215,14 @@ function renderHeader() {
     <div class="hd-right">
       ${app.room ? `<span class="room-chip" title="${esc(t('roomCode'))}">${esc(app.room)}<i class="dot ${st}" title="${esc(t(st))}"></i></span>` : ''}
       <button class="icon-btn" data-act="sound" aria-label="${esc(t('sound'))}">${sound.bgmOn || sound.sfxOn ? icon.sound : icon.mute}</button>
+      ${STANDALONE ? '' : `<button class="icon-btn" data-act="fullscreen" aria-label="${esc(t('fullscreen'))}" title="${esc(t('fullscreen'))}">${isFull() ? icon.unfull : icon.full}</button>`}
       <button class="icon-btn" data-act="help" aria-label="${esc(t('howTo'))}">${icon.help}</button>
       <label class="lang-sel">${icon.globe}<select id="langSel" data-change="lang" aria-label="${esc(t('language'))}">${LANGS.map(([k, n]) => `<option value="${k}" ${k === getLang() ? 'selected' : ''}>${n}</option>`).join('')}</select></label>
     </div>
     ${app.ui.sound ? soundPanel() : ''}`;
   if (h._html !== html) { h.innerHTML = html; h._html = html; }
   const m = $('#modal');
-  const mh = app.ui.modal === 'age' ? ageModal() : app.ui.modal ? helpModal() : '';
+  const mh = app.ui.modal === 'age' ? ageModal() : app.ui.modal === 'a2hs' ? a2hsModal() : app.ui.modal ? helpModal() : '';
   if (m._html !== mh) { m.innerHTML = mh; m._html = mh; m.hidden = !mh; }
 }
 
@@ -310,6 +316,13 @@ function ageModal() {
     <h2>${esc(t('ageTitle'))}</h2><p>${esc(t('ageBody'))}</p>
     <div class="age-btns"><button class="btn danger big" data-act="ageYes">${esc(t('ageYes'))}</button><button class="btn ghost big" data-act="ageNo">${esc(t('ageNo'))}</button></div></div>
   </div>`;
+}
+function a2hsModal() {
+  return `<div class="modal-bg" data-act="closeModal"></div>
+  <div class="modal card age" role="dialog" aria-modal="true"><div class="modal-body">
+    <h2>${esc(t('fullscreen'))}</h2><p>${esc(t('a2hsBody'))}</p>
+    <ol class="a2hs"><li>${esc(t('a2hs1'))}</li><li>${esc(t('a2hs2'))}</li><li>${esc(t('a2hs3'))}</li></ol>
+    <button class="btn ghost big" data-act="closeModal">${esc(t('close'))}</button></div></div>`;
 }
 function helpModal() {
   const tab = app.ui.tab;
@@ -822,6 +835,16 @@ const actions = {
   ageNo() { try { localStorage.setItem('mj-age', 'no'); } catch {} app.ui.modal = null; renderHeader(); },
   closeModal() { app.ui.modal = null; renderHeader(); },
   sound() { app.ui.sound = !app.ui.sound; renderHeader(); },
+  async fullscreen() {
+    const d = document, el = d.documentElement;
+    try {
+      if (isFull()) { await (d.exitFullscreen || d.webkitExitFullscreen).call(d); }
+      else if (el.requestFullscreen) { await el.requestFullscreen({ navigationUI: 'hide' }); }
+      else if (el.webkitRequestFullscreen) { el.webkitRequestFullscreen(); }
+      else { app.ui.modal = 'a2hs'; }
+    } catch { app.ui.modal = 'a2hs'; }
+    renderHeader();
+  },
   async copy() {
     try { await navigator.clipboard.writeText(joinUrl()); } catch { const i = $('.url'); i?.select(); document.execCommand?.('copy'); }
     app.ui.copied = true; render(); setTimeout(() => { app.ui.copied = false; render(); }, 1800);
