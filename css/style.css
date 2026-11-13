@@ -783,3 +783,21 @@ main, .top { position: relative; z-index: 1; }
 .ptok .pt-name { font-size: 15px; font-family: var(--serif); letter-spacing: .04em; }
 .vcard, .ecard { padding: 18px 28px; }
 .vcard b, .ecard b { font-size: 26px; }
+
+/* 陣営の色：市民側＝緑、人狼側＝赤、第三陣営＝青（寺本指定） */
+:root { --c-village: #3f9b4e; --c-wolf: #c8302a; --c-fox: #2f6fd0; }
+.ricon.pic { box-shadow: 0 0 0 1px #000, 0 0 0 3px var(--c-village), 0 3px 8px rgba(0, 0, 0, .6); }
+.ricon.pic.t-wolf { box-shadow: 0 0 0 1px #000, 0 0 0 3px var(--c-wolf), 0 3px 8px rgba(0, 0, 0, .6); }
+.ricon.pic.t-fox { box-shadow: 0 0 0 1px #000, 0 0 0 3px var(--c-fox), 0 3px 8px rgba(0, 0, 0, .6); }
+.strip-i { padding: 3px; }
+.t-village { color: #7fd08a; border-color: rgba(63, 155, 78, .6); background: rgba(63, 155, 78, .14); }
+.t-wolf { color: #ff8a80; border-color: rgba(200, 48, 42, .6); background: rgba(200, 48, 42, .14); }
+.t-fox { color: #8db6ff; border-color: rgba(47, 111, 208, .6); background: rgba(47, 111, 208, .16); }
+.rcard.r-village .rcard-name { background: linear-gradient(180deg, #3f8a45, #24572a); border-top-color: #5fae62; }
+.rcard.r-fox .rcard-name { background: linear-gradient(180deg, #2f6fd0, #1b4690); border-top-color: #5b93ea; }
+.rcard.r-village .rcard-art { box-shadow: inset 0 0 0 3px var(--c-village); }
+.rcard.r-wolf .rcard-art { box-shadow: inset 0 0 0 3px var(--c-wolf); }
+.rcard.r-fox .rcard-art { box-shadow: inset 0 0 0 3px var(--c-fox); }
+.bf { background: linear-gradient(90deg, #4d86e0, #2556a8); }
+.lf { color: #8db6ff; }
+.w-fox { background: radial-gradient(circle at 50% 0, rgba(47, 111, 208, .4), rgba(10, 18, 40, .6)); border-color: rgba(47, 111, 208, .5); }
