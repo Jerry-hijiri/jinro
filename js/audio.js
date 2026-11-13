@@ -231,6 +231,11 @@ const TRACKS = {
 };
 
 const SFX = {
+  gunshot(s, t) {
+    s.noise(t, 0.5, { ft: 'lowpass', f: 5000, f2: 300, gain: 0.9, rev: 1 });
+    s.tone(70, t, 0.6, { type: 'sine', gain: 0.8, dest: s.sfx, glide: 30 });
+    s.noise(t + 0.02, 1.4, { ft: 'bandpass', f: 600, q: 0.6, gain: 0.12, rev: 1 });
+  },
   poop(s, t) {
     s.noise(t, 0.35, { ft: 'lowpass', f: 380, f2: 120, q: 4, gain: 0.5 });
     s.tone(140, t, 0.3, { type: 'square', gain: 0.06, dest: s.sfx, glide: 70, lp: 600 });

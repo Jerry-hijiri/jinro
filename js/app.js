@@ -181,10 +181,11 @@ function handleAnim(pub) {
   else if (a.kind === 'morning') fx.morning(a.day, (a.deaths || []).map(P), a.bread);
   else if (a.kind === 'exec') fx.execution(P(a.victim), a.lot, a.follow ? P(a.follow) : null);
   else if (a.kind === 'end') fx.ending(a.winner);
+  else if (a.kind === 'shot' && a.victim) fx.shot(P(a.victim), a.follow ? P(a.follow) : null);
 }
 
 function setBgm(pub) {
-  const m = { lobby: 'title', intro: 'night', role: 'night', night: 'night', morning: 'day', day: 'day', vote: 'vote', voteResult: 'vote', execution: 'vote', end: pub.winner === 'village' || pub.winner === 'lovers' ? 'endVillage' : 'endWolf' };
+  const m = { hunter: 'vote', shot: 'vote', lobby: 'title', intro: 'night', role: 'night', night: 'night', morning: 'day', day: 'day', vote: 'vote', voteResult: 'vote', execution: 'vote', end: pub.winner === 'village' || pub.winner === 'lovers' ? 'endVillage' : 'endWolf' };
   if (fx.busy()) return;
   sound.play(m[pub.phase] || 'title');
 }
@@ -494,6 +495,7 @@ function playerLobby(pub, priv) {
 /* ---------- 参加者：ゲーム中 ---------- */
 function partnersHtml(priv) {
   const P = (ids) => ids.filter((id) => id !== app.client.pid).map((id) => esc(nameOf(id)));
+  if (priv.role === 'fanatic') { const x = (priv.wolves || []).map((id) => esc(nameOf(id))); return `<div class="partners"><span>${esc(t('partners_fanatic'))}</span><b>${x.join(' / ')}</b></div>`; }
   if (priv.role === 'werewolf') { const x = P(priv.wolves || []); return `<div class="partners"><span>${esc(t('partners_wolf'))}</span><b>${x.length ? x.join(' / ') : esc(t('noPartner'))}</b></div>`; }
   let h = '';
   if (priv.role === 'mason') { const x = P(priv.masons || []); h += `<div class="partners"><span>${esc(t('partners_mason'))}</span><b>${x.length ? x.join(' / ') : esc(t('noPartner'))}</b></div>`; }
@@ -542,7 +544,7 @@ function myPanel(priv) {
 }
 function tag(p) {
   if (p.alive) return '';
-  return `<span class="tag ${p.death?.how}">${esc(t(p.death?.how === 'exec' ? 'tag_exec' : p.death?.how === 'love' ? 'tag_love' : 'tag_night'))}</span>`;
+  return `<span class="tag ${p.death?.how}">${esc(t(p.death?.how === 'exec' ? 'tag_exec' : p.death?.how === 'love' ? 'tag_love' : p.death?.how === 'hunter' ? 'tag_shot' : 'tag_night'))}</span>`;
 }
 function grid(players, o = {}) {
   return `<div class="pgrid ${o.selectable ? 'selectable' : ''}">${players.map((p) => {
@@ -569,6 +571,7 @@ function playerGame(pub, priv) {
   if (ph === 'intro') return `<section class="center"><div class="card msg night-msg"><div class="moon-sm"></div><p>${esc(t('intro2'))}</p></div></section>`;
   if (ph === 'role') return roleReveal(pub, priv);
   if (ph === 'end') return endView(pub, priv);
+  if (ph === 'hunter') return hunterView(pub, priv);
   if (dead) return spectator(pub, priv);
   if (ph === 'night') return nightView(pub, priv);
   if (ph === 'morning' || ph === 'day') return dayView(pub, priv);
@@ -611,6 +614,16 @@ function actResultHtml(priv) {
   else if (r.kind === 'cupid') { title = t('res_cupid'); body = `<div class="ar-name">${(r.targets || []).map((id) => esc(nameOf(id))).join('<i> ＆ </i>')}</div>`; cls = 'love'; }
   else return '';
   return `<div class="card act-result ${cls}"><div class="ar-title">${roleIcon(priv.role, 34)}<span>${esc(title)}</span></div>${body}</div>`;
+}
+function hunterView(pub, priv) {
+  const head = `<div class="phase-head vote"><h2>${esc(t('phase_hunter'))}</h2><div class="timer" data-deadline="1">--:--</div></div>`;
+  if (!priv.shoot) return `<section class="narrow">${head}<div class="card msg"><p class="hunter-wait">${esc(t('hunterWait', { name: nameOf(pub.hunter) }))}</p></div>${grid(pub.players)}</section>`;
+  const tg = priv.shoot.targets;
+  return `<section class="narrow">${head}
+    <div class="card prompt-card"><p class="prompt">${esc(t('hunterPrompt'))}</p><p class="note">${esc(t('hunterNote'))}</p></div>
+    ${grid(pub.players.filter((p) => p.alive), { selectable: true, targets: tg, selected: app.ui.sel })}
+    <div class="sticky-act"><button class="btn danger big" data-act="doShoot" ${app.ui.sel && tg.includes(app.ui.sel) ? '' : 'disabled'}>${esc(t('shootBtn'))}${app.ui.sel ? `：${esc(nameOf(app.ui.sel))}` : ''}</button></div>
+  </section>`;
 }
 function nightView(pub, priv) {
   const act = priv.act;
@@ -733,6 +746,7 @@ function spectator(pub, priv) {
 
 function timelineHtml(pub) {
   const rows = (pub.history || []).map((h) => {
+    if (h.kind === 'shot') return `<li><span class="d">${esc(t('dayN', { n: h.day }))}</span>${esc(t('phase_hunter'))}：${h.victim ? `${esc(nameOf(h.by))} → ${esc(nameOf(h.victim))}${h.follow ? `（${esc(t('followed', { name: nameOf(h.follow) }))}）` : ''}` : esc(t('hunterMiss'))}</li>`;
     if (h.kind === 'night') return `<li><span class="d">${esc(t('nightN', { n: h.day }))}</span>${h.deaths.length ? `${esc(t('tag_night'))}：${esc(joinNames(h.deaths.map(nameOf)))}` : esc(t('morningPeace'))}</li>`;
     return `<li><span class="d">${esc(t('dayN', { n: h.day }))}</span>${h.victim ? `${esc(t('tag_exec'))}：${esc(nameOf(h.victim))}${h.lot ? ' 🎲' : ''}${h.follow ? `（${esc(t('followed', { name: nameOf(h.follow) }))}）` : ''}` : esc(t('noExec'))}</li>`;
   }).join('');
@@ -763,7 +777,7 @@ function controls(pub) {
   const ph = pub.phase;
   const b = [];
   if (ph === 'day') { b.push(`<button class="btn" data-act="toVote">${esc(t('toVote'))}</button>`); b.push(`<button class="btn ghost" data-act="addMin">${esc(t('addMin'))}</button>`); }
-  if (['intro', 'role', 'night', 'morning', 'vote', 'voteResult', 'execution'].includes(ph)) b.push(`<button class="btn ghost" data-act="force">${esc(t('forceNext'))}</button>`);
+  if (['intro', 'role', 'night', 'morning', 'vote', 'voteResult', 'execution', 'hunter', 'shot'].includes(ph)) b.push(`<button class="btn ghost" data-act="force">${esc(t('forceNext'))}</button>`);
   if (ph !== 'end') b.push(`<button class="btn ghost xs" data-act="endGame">${esc(t('endGame'))}</button>`);
   return b.join('');
 }
@@ -781,6 +795,7 @@ function gmBoard(pub) {
   if (ph === 'role') { title = t('phase_role'); sub = t('waitingOthers', { a: pub.players.filter((p) => p.done).length, b: pub.players.length }); }
   if (ph === 'day' || ph === 'morning') { title = `${t('dayN', { n: pub.day })} · ${t('discussion')}`; sub = t('discussHint'); }
   if (ph === 'vote') { title = pub.candidates ? t('runoff') : t('vote'); sub = t('votingN', progress(pub)); }
+  if (ph === 'hunter') { title = t('phase_hunter'); sub = t('hunterWait', { name: nameOf(pub.hunter) }); }
   if (ph === 'end') return endView(pub, null) + '';
   return `<section class="gm">
     <div class="gm-head ${ph}">
@@ -957,6 +972,7 @@ const actions = {
   },
   endGame() { if (confirm(t('endConfirm'))) hc('lobby', () => app.engine.backToLobby()); },
   again() { hc('lobby', () => app.engine.backToLobby()); },
+  doShoot() { if (!app.ui.sel) return; app.client.send({ t: 'shoot', target: app.ui.sel }); sound.sfxPlay('confirm'); },
   poop() { app.client.send({ t: 'poop' }); },
   betSide(el) { app.ui.betSide = el.dataset.side; sound.sfxPlay('select'); render(); },
   betAmt(el) { const max = app.client.priv?.betInfo?.max || 5; app.ui.betAmt = Math.min(max, Math.max(1, (app.ui.betAmt || Math.min(max, 5)) + +el.dataset.d)); sound.sfxPlay('click'); render(); },

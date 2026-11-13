@@ -244,7 +244,7 @@ function ambush(day, victims, breadTxt = '') {
 
 export function execution(victim, lot, follow = null) {
   const after = follow ? t('followed', { name: follow.name }) : '';
-  if (gore && VIDEOS.execOk) return playVideo('exec', deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : '', after), () => { VIDEOS.execOk = false; execution(victim, lot, follow); }, deathHtml([victim.name], '', '', t('execIntro')));
+  if (gore && VIDEOS.execOk) return playVideo('exec', deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : '', after), () => { VIDEOS.execOk = false; execution(victim, lot, follow); });
   const real = gore && sceneOk.guillotine_plate && sceneOk.blade;
   const ini = esc([...victim.name.replace(/^CPU\s+/, '')][0] || '?');
   const p = mount('fx-exec' + (real ? ' real' : ''), real ? `
@@ -313,4 +313,16 @@ export function poop(fromName) {
     setTimeout(() => tag.remove(), 3200);
   }
   sound.sfxPlay('poop');
+}
+
+// 狩人の一矢
+export function shot(victim, follow) {
+  if (!victim) return null;
+  const after = follow ? t('followed', { name: follow.name }) : '';
+  const p = mount('fx-shot', `<div class="dark"></div><div class="flashw"></div><div class="amb-blood">${splatSvg()}</div><div class="drips">${drips(12)}</div><div class="vignette"></div>
+    ${deathHtml([victim.name], t('shotSub'), '', t('shotPre'), after)}`, 6800);
+  const c = mount.last;
+  sound.sfxPlay('heartbeat');
+  c.at(1200, () => { c.el.classList.add('hit'); sound.sfxPlay('gunshot'); sound.sfxPlay('gore'); });
+  return p;
 }

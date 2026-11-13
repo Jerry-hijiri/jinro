@@ -2,7 +2,7 @@
 import { ROLE_ORDER, ROLES, recommend, validate, full, points, balance, MAX_PLAYERS } from './roles.js';
 import { deriveKey, seal, unseal } from './net.js';
 
-export const T = { intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 15000, nightMin: 4200 };
+export const T = { shot: 7000, hunter: 30000, intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 15000, nightMin: 4200 };
 
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -136,6 +136,12 @@ export class Engine {
         if (this.alive().every((x) => x.id in s.votes)) { this.tally(); return; }
         break;
       }
+      case 'shoot': {
+        if (s.phase !== 'hunter' || s.hunter?.pid !== pid) return;
+        if (!this.P(msg.target)?.alive) return;
+        this.shoot(msg.target);
+        return;
+      }
       case 'poop': {
         // 死んだ人のお遊び：全員の画面にうんこを流す（連打防止で4秒に1回）
         if (!p || p.alive || s.phase === 'lobby') return;
@@ -228,6 +234,9 @@ export class Engine {
       if (s.phase === 'day' && !s.skip.includes(b.id)) {
         this.botLater(k(b.id), rnd(12000, 30000), () => { if (this.s.phase === 'day' && !this.s.skip.includes(b.id)) this.handle(b.id, { t: 'skip' }); });
       }
+      if (s.phase === 'hunter' && s.hunter?.pid === b.id) {
+        this.botLater(k(b.id), rnd(2500, 5000), () => { const al = this.alive(); if (this.s.phase === 'hunter' && al.length) this.shoot(pick(al).id); });
+      }
       if (s.phase === 'vote' && !(b.id in s.votes)) {
         this.botLater(k(b.id), rnd(1500, 5000), () => {
           if (this.s.phase !== 'vote') return;
@@ -278,7 +287,7 @@ export class Engine {
     s.players.forEach((p) => { p.alive = true; p.death = null; });
     Object.assign(s, {
       day: 0, acts: {}, votes: {}, candidates: null, runoffDone: false, lastGuard: null,
-      seerLog: {}, mediumLog: [], medPending: null, medNow: null, nightResult: {}, history: [], winner: null, lovers: null, bets: {}, fun: null,
+      seerLog: {}, mediumLog: [], medPending: null, medNow: null, nightResult: {}, history: [], winner: null, lovers: null, bets: {}, fun: null, hunter: null, hunterUsed: [],
       ready: [], skip: [], voteResult: null, phase: 'intro',
     });
     s.pts = points(s.cfg);
@@ -357,6 +366,7 @@ export class Engine {
     const s = this.s;
     switch (s.phase) {
       case 'role': this.startNight(1); return;
+      case 'hunter': this.shoot(null); return;
       case 'night': this.resolveNight(); return;
       case 'day': this.startVote(); return;
       case 'vote': this.tally(); return;
@@ -382,6 +392,8 @@ export class Engine {
       startVote: () => this.startVote(),
       afterVoteResult: () => this.afterVoteResult(),
       afterExec: () => this.afterExec(),
+      hunterTimeout: () => this.shoot(null),
+      afterShot: () => this.afterShot(),
     }[name];
     if (f) f();
   }
@@ -476,7 +488,54 @@ export class Engine {
     this.commit();
   }
 
+  // 狩人：死んだ狩人がいれば、道連れを選ぶ時間をはさむ
+  hunterCheck(from) {
+    const s = this.s;
+    s.hunterUsed ||= [];
+    const h = s.players.find((p) => !p.alive && s.roles[p.id] === 'hunter' && !s.hunterUsed.includes(p.id));
+    if (!h) return false;
+    s.hunterUsed.push(h.id);
+    s.hunter = { pid: h.id, from };
+    s.phase = 'hunter';
+    this.arm(T.hunter, 'hunterTimeout');
+    this.commit();
+    return true;
+  }
+
+  shoot(target) {
+    const s = this.s;
+    if (s.phase !== 'hunter' || !s.hunter) return;
+    const from = s.hunter.from;
+    const by = s.hunter.pid;
+    this.clearTimer();
+    let follow = null;
+    if (target && this.P(target)?.alive) {
+      const q = this.P(target); q.alive = false; q.death = { day: s.day, how: 'hunter' };
+      const mate = this.loverOf(target);
+      if (mate && this.P(mate)?.alive) { const m = this.P(mate); m.alive = false; m.death = { day: s.day, how: 'love' }; follow = mate; }
+    } else target = null;
+    s.history.push({ day: s.day, kind: 'shot', by, victim: target, follow });
+    s.hunter = null;
+    s.phase = 'shot';
+    s.shotFrom = from;
+    this.anim('shot', { by, victim: target, follow });
+    this.arm(target ? T.shot : 3500, 'afterShot');
+    this.commit();
+  }
+
+  afterShot() {
+    const from = this.s.shotFrom;
+    if (this.hunterCheck(from)) return;
+    if (from === 'exec') { if (this.checkWin()) return; this.startNight(this.s.day + 1); return; }
+    this.toDay();
+  }
+
   afterMorning() {
+    if (this.hunterCheck('morning')) return;
+    this.toDay();
+  }
+
+  toDay() {
     if (this.checkWin()) return;
     const s = this.s;
     s.phase = 'day';
@@ -552,6 +611,7 @@ export class Engine {
   }
 
   afterExec() {
+    if (this.hunterCheck('exec')) return;
     if (this.checkWin()) return;
     this.startNight(this.s.day + 1);
   }
@@ -626,6 +686,7 @@ export class Engine {
       cfg: s.cfg, cfgAuto: s.cfgAuto, settings: s.settings, candidates: s.candidates, voteResult: vr,
       skip: s.skip.length, winner: s.winner, reveal: ph === 'end' ? s.roles : null, lovers: ph === 'end' ? s.lovers : null, history: s.history,
       fun: s.fun || null,
+      hunter: s.phase === 'hunter' ? s.hunter?.pid : null,
       scores: Object.fromEntries(s.players.map((p) => [p.id, s.scores[p.id] || 0])), round: s.round, lastResult: s.lastResult, pts: ph === 'lobby' ? points(s.cfg) : s.pts,
     };
   }
@@ -638,6 +699,7 @@ export class Engine {
     const o = { joined: true, name: p.name, role, owner: !!p.owner };
     if (!role || s.phase === 'lobby') { o.role = null; return o; }
     const ids = (r) => s.players.filter((x) => s.roles[x.id] === r).map((x) => x.id);
+    if (role === 'fanatic') o.wolves = ids('werewolf');
     if (role === 'werewolf') {
       o.wolves = ids('werewolf');
       if (s.phase === 'night') o.packPicks = Object.fromEntries(o.wolves.map((w) => [w, s.acts[w] ?? null]));
@@ -653,6 +715,7 @@ export class Engine {
     if (s.phase === 'day') o.skipped = s.skip.includes(pid);
     if (!p.alive && s.settings.deadSee) o.allRoles = s.roles;
     if (!p.alive && s.settings.deadSee) o.allLovers = s.lovers;
+    if (s.phase === 'hunter' && s.hunter?.pid === pid) o.shoot = { targets: this.alive().map((x) => x.id) };
     if (!p.alive && s.phase !== 'end') { o.betInfo = this.betInfo(pid); o.bet = s.bets?.[pid] || null; }
     return o;
   }

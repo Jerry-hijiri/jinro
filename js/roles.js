@@ -1,5 +1,5 @@
 // 役職の定義・おすすめ構成・有利度の目安
-export const ROLE_ORDER = ['villager', 'werewolf', 'seer', 'medium', 'knight', 'mason', 'baker', 'madman', 'fox', 'cupid'];
+export const ROLE_ORDER = ['villager', 'werewolf', 'seer', 'medium', 'knight', 'mason', 'baker', 'hunter', 'madman', 'fanatic', 'fox', 'cupid'];
 
 export const ROLES = {
   villager: { team: 'village', color: '#8fb573', max: 20 },
@@ -12,6 +12,8 @@ export const ROLES = {
   fox:      { team: 'fox', color: '#e98a3c', max: 1 },
   cupid:    { team: 'lovers', color: '#d06a9a', max: 1 },
   baker:    { team: 'village', color: '#d9a35a', max: 1 },
+  hunter:   { team: 'village', color: '#8a6a3a', max: 1 },
+  fanatic:  { team: 'wolf', color: '#9b3b5a', max: 1 },
 };
 
 // 64x64 のシンボル（メダルの中に描く）
@@ -24,6 +26,8 @@ const P = {
   mason: '<circle cx="24" cy="32" r="13" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="40" cy="32" r="13" fill="none" stroke="currentColor" stroke-width="6" opacity=".85"/>',
   madman: '<path d="M10 16c14-6 30-6 44 0 0 20-8 36-22 40C18 52 10 36 10 16z" fill="currentColor"/><path d="M17 27c3-4 9-4 12 0-4 3-8 3-12 0zM35 27c3-4 9-4 12 0-4 3-8 3-12 0z" fill="#0b0f1a"/><path d="M20 39c8 8 16 8 24 0-4 9-20 9-24 0z" fill="#0b0f1a"/>',
   baker: '<path d="M10 40c0-12 10-20 22-20s22 8 22 20v6H10z" fill="currentColor"/><path d="M20 30l4 8M30 27l2 9M40 28l-1 9M48 32l-3 7" stroke="#0b0f1a" stroke-width="2.5" opacity=".5"/>',
+  hunter: '<path d="M14 50L50 14" stroke="currentColor" stroke-width="6" stroke-linecap="round"/><circle cx="50" cy="14" r="5" fill="currentColor"/>',
+  fanatic: '<circle cx="32" cy="30" r="20" fill="currentColor"/><path d="M22 28l6 3-6 2zM42 28l-6 3 6 2z" fill="#0b0f1a"/>',
   cupid: '<path d="M32 54C14 42 8 32 8 23c0-8 6-13 12-13 5 0 9 3 12 8 3-5 7-8 12-8 6 0 12 5 12 13 0 9-6 19-24 31z" fill="currentColor"/><path d="M6 46L56 14" stroke="#f3e2c0" stroke-width="3"/><path d="M56 14l-9 1 5 6z" fill="#f3e2c0"/>',
   fox: '<path d="M9 7l15 19h16L55 7l-2 25-21 26-21-26z" fill="currentColor"/><path d="M14 30l9 4-7 3zM50 30l-9 4 7 3z" fill="#0b0f1a"/><path d="M27 48h10l-5 8z" fill="#fff" opacity=".8"/>',
 };
@@ -75,7 +79,7 @@ export function balance(cfgIn) {
   const c = full(cfgIn);
   const n = total(c);
   if (n < 3 || c.werewolf < 1) return null;
-  const wolfSide = c.werewolf + 0.45 * c.madman;
+  const wolfSide = c.werewolf + 0.45 * c.madman + 0.65 * (c.fanatic || 0);
   // 人狼の比率（少人数ほど1票の重みが大きい）
   let x = 6 * wolfSide / n;
   // 情報役・守り役の効き（初日の襲撃なしを前提に調整）
@@ -83,6 +87,7 @@ export function balance(cfgIn) {
   x -= 0.15 * Math.min(c.medium, 1);
   x -= 0.25 * Math.min(c.knight, 1);
   x -= c.mason >= 2 ? 0.1 : 0;
+  x -= 0.2 * Math.min(c.hunter || 0, 1);
   x -= 0.3;
   let wolf = 1 / (1 + Math.exp(-1.7 * x));
   let fox = 0;
