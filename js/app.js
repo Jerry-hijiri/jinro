@@ -29,7 +29,7 @@ if (params.get('mute') === '1') { sound.bgmOn = false; sound.sfxOn = false; }
 const COLORS = ['#e0785a', '#d9a441', '#8fb573', '#4fae9b', '#5b9bd5', '#8a7cf0', '#c46aa8', '#e06a8a', '#a08a6a', '#6fb0c9', '#b5a642', '#9a6fd0'];
 function colorOf(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return COLORS[h % COLORS.length]; }
 const initial = (name) => [...String(name).replace(/^CPU\s+/, '')][0] || '?';
-const av = (p, size = '') => `<span class="av ${size}" style="--c:${colorOf(p.id)}">${esc(initial(p.name))}</span>`;
+const av = () => ''; // 参加者の丸アイコンは使わない（寺本指示）
 const nameOf = (id) => app.client?.pub?.players.find((p) => p.id === id)?.name ?? '?';
 const icon = {
   sound: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',

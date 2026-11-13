@@ -776,3 +776,10 @@ main, .top { position: relative; z-index: 1; }
 .emblem .ricon.pic, .wb-i .ricon.pic { border-radius: 50%; }
 .pt-role .ricon.pic, .rr .ricon.pic, .notes .ricon.pic, .pack .ricon.pic { border-radius: 3px; }
 .art { width: auto; height: auto; background: none; box-shadow: none; }
+
+/* 参加者の丸アイコンなし：名前だけで見せる */
+.av { display: none !important; }
+.ptok { justify-content: center; min-height: 74px; padding: 14px 8px; }
+.ptok .pt-name { font-size: 15px; font-family: var(--serif); letter-spacing: .04em; }
+.vcard, .ecard { padding: 18px 28px; }
+.vcard b, .ecard b { font-size: 26px; }
