@@ -97,7 +97,7 @@ export function morning(day, victims) {
     return p;
   }
   const names = joinNames(victims.map((v) => v.name));
-  const cards = victims.map((v) => `<div class="vcard"><div class="av" style="--c:${v.color}">${esc(v.name.slice(0, 1))}</div><b>${esc(v.name)}</b></div>`).join('');
+  const cards = victims.map((v) => `<div class="vcard"><div class="av" style="--c:${v.color}">${esc([...v.name.replace(/^CPU\s+/, '')][0] || '?')}</div><b>${esc(v.name)}</b></div>`).join('');
   const p = mount('fx-kill', `
     <div class="redsky"></div><div class="moon red"><span></span></div>
     <div class="kill-stage">${cards}</div>
@@ -118,7 +118,7 @@ export function execution(victim, lot) {
   const p = mount('fx-exec', `
     <div class="dark"></div><div class="spot"></div>
     <svg class="rope" viewBox="0 0 60 300"><path d="M30 0V210"/><ellipse cx="30" cy="238" rx="17" ry="27"/><path d="M24 205h12v14H24z"/></svg>
-    <div class="ecard"><div class="av" style="--c:${victim.color}">${esc(victim.name.slice(0, 1))}</div><b>${esc(victim.name)}</b></div>
+    <div class="ecard"><div class="av" style="--c:${victim.color}">${esc([...victim.name.replace(/^CPU\s+/, '')][0] || '?')}</div><b>${esc(victim.name)}</b></div>
     <div class="stamp">${esc(t('tag_exec'))}</div>
     <div class="ash"></div>
     <div class="center-text low"><p>${lot ? esc(t('lot')) + '<br>' : ''}${esc(t('executed', { name: victim.name }))}</p></div>`, 8600);

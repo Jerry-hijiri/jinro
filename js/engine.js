@@ -1,5 +1,5 @@
 // オーナーの端末で動く進行役（ゲームの正本）。参加者にはこの端末から状態を配る。
-import { ROLE_ORDER, recommend, validate, full, MAX_PLAYERS } from './roles.js';
+import { ROLE_ORDER, ROLES, recommend, validate, full, points, MAX_PLAYERS } from './roles.js';
 import { deriveKey, seal, unseal } from './net.js';
 
 export const T = { intro: 10000, morning: 7500, morningDeath: 10500, voteResult: 7000, exec: 9000, nightMin: 4200 };
@@ -19,7 +19,10 @@ export class Engine {
     this.localCb = null;
     this.onPublic = null;
     this.s = saved || this.fresh();
+    this.s.scores ||= {};
+    this.s.round ||= 0;
     this.timer = null;
+    this.botTimers = new Map();
   }
 
   fresh() {
@@ -30,6 +33,7 @@ export class Engine {
       roles: {}, acts: {}, votes: {}, candidates: null, runoffDone: false, lastGuard: null,
       seerLog: {}, mediumLog: [], medPending: null, history: [], winner: null,
       endsAt: null, next: null, ready: [], skip: [], voteResult: null, nightStart: 0,
+      scores: {}, round: 0, lastResult: null, pts: null,
     };
   }
 
@@ -135,6 +139,71 @@ export class Engine {
     this.cache.delete(pid);
   }
 
+  /* ---------- CPU ---------- */
+  addBot() {
+    const s = this.s;
+    if (s.phase !== 'lobby' || s.players.length >= MAX_PLAYERS) return;
+    const NAMES = ['ルナ', 'ガロ', 'ミラ', 'ソラ', 'ジン', 'ノア', 'レン', 'ユキ', 'カイ', 'リオ', 'ハル', 'サキ', 'トワ', 'エマ', 'ロイ', 'ニナ'];
+    const used = new Set(s.players.map((p) => p.name));
+    const base = NAMES.find((n) => !used.has('CPU ' + n)) || String(s.players.length + 1);
+    s.players.push({ id: 'cpu_' + uid(), name: 'CPU ' + base, alive: true, host: false, bot: true, death: null });
+    if (s.cfgAuto) s.cfg = recommend(s.players.length);
+    this.commit();
+  }
+
+  botLater(key, ms, fn) {
+    if (this.botTimers.has(key)) return;
+    this.botTimers.set(key, setTimeout(() => { this.botTimers.delete(key); fn(); }, ms));
+  }
+
+  botTick() {
+    const s = this.s;
+    const bots = s.players.filter((p) => p.bot);
+    if (!bots.length) return;
+    const r = s.roles;
+    const rnd = (a, b) => a + Math.random() * (b - a);
+    const k = (id) => `${s.phase}:${s.day}:${s.candidates ? 'r' : ''}:${id}`;
+    for (const b of bots) {
+      if (s.phase === 'role' && !s.ready.includes(b.id)) {
+        this.botLater(k(b.id), rnd(1500, 3500), () => this.handle(b.id, { t: 'ready' }));
+      }
+      if (!b.alive) continue;
+      if (s.phase === 'night' && !(b.id in s.acts)) {
+        const wait = Math.max(0, s.nightStart + 4800 - Date.now()) + rnd(1200, 4500);
+        this.botLater(k(b.id), wait, () => {
+          if (this.s.phase !== 'night') return;
+          const a = this.actFor(b);
+          if (!a.targets.length) return;
+          let tg = pick(a.targets);
+          if (r[b.id] === 'werewolf') {
+            const mate = Object.entries(this.s.acts).find(([w, x]) => w !== b.id && r[w] === 'werewolf' && x);
+            if (mate && a.targets.includes(mate[1])) tg = mate[1];
+          }
+          if (r[b.id] === 'seer') {
+            const seen = new Set((this.s.seerLog[b.id] || []).map((x) => x.target));
+            const fresh = a.targets.filter((x) => !seen.has(x));
+            if (fresh.length) tg = pick(fresh);
+          }
+          this.handle(b.id, { t: 'act', target: tg });
+        });
+      }
+      if (s.phase === 'day' && !s.skip.includes(b.id)) {
+        this.botLater(k(b.id), rnd(12000, 30000), () => { if (this.s.phase === 'day' && !this.s.skip.includes(b.id)) this.handle(b.id, { t: 'skip' }); });
+      }
+      if (s.phase === 'vote' && !(b.id in s.votes)) {
+        this.botLater(k(b.id), rnd(1500, 5000), () => {
+          if (this.s.phase !== 'vote') return;
+          const tgs = this.voteTargets(b.id);
+          let opts = tgs;
+          if (r[b.id] === 'werewolf') opts = tgs.filter((x) => r[x] !== 'werewolf');
+          const black = (this.s.seerLog[b.id] || []).find((x) => x.res === 'wolf' && tgs.includes(x.target));
+          if (black) opts = [black.target];
+          this.handle(b.id, { t: 'vote', target: pick(opts.length ? opts : tgs) });
+        });
+      }
+    }
+  }
+
   /* ---------- オーナー操作 ---------- */
   hostJoin(name) { this.handle(this.localPid, { t: 'join', name }); }
   hostLeave() { if (this.s.phase === 'lobby') { this.removePlayer(this.localPid); this.commit(); } }
@@ -174,6 +243,7 @@ export class Engine {
       seerLog: {}, mediumLog: [], medPending: null, history: [], winner: null,
       ready: [], skip: [], voteResult: null, phase: 'intro',
     });
+    s.pts = points(s.cfg);
     this.anim('intro');
     this.arm(T.intro, 'toRole');
     this.commit();
@@ -189,6 +259,40 @@ export class Engine {
       lastGuard: null, seerLog: {}, mediumLog: [], medPending: null, winner: null, ready: [], skip: [],
       voteResult: null, endsAt: null, next: null, anim: null, history: [],
     });
+    this.commit();
+  }
+
+  ranks(ids, sc) {
+    const sorted = [...ids].sort((a, b) => (sc[b] || 0) - (sc[a] || 0));
+    const r = {};
+    sorted.forEach((id, i) => { r[id] = i > 0 && (sc[id] || 0) === (sc[sorted[i - 1]] || 0) ? r[sorted[i - 1]] : i + 1; });
+    return r;
+  }
+
+  applyScores(win) {
+    const s = this.s;
+    const pts = s.pts || points(s.cfg);
+    const ids = s.players.map((p) => p.id);
+    const before = Object.fromEntries(ids.map((id) => [id, s.scores[id] || 0]));
+    const prevRank = this.ranks(ids, before);
+    const deltas = {};
+    for (const id of ids) {
+      const team = ROLES[s.roles[id]]?.team;
+      if (!team || !pts?.[team]) { deltas[id] = 0; continue; }
+      const won = team === win;
+      const after = Math.max(0, before[id] + (won ? pts[team].win : -pts[team].lose));
+      deltas[id] = after - before[id];
+      s.scores[id] = after;
+    }
+    s.round += 1;
+    s.lastResult = { round: s.round, deltas, prevRank, rank: this.ranks(ids, s.scores), winner: win };
+  }
+
+  resetScores() {
+    if (this.s.phase !== 'lobby') return;
+    this.s.scores = {};
+    this.s.round = 0;
+    this.s.lastResult = null;
     this.commit();
   }
 
@@ -394,6 +498,7 @@ export class Engine {
     if (!win) return false;
     this.clearTimer();
     s.winner = win;
+    this.applyScores(win);
     s.phase = 'end';
     this.anim('end', { winner: win });
     this.commit();
@@ -412,9 +517,10 @@ export class Engine {
     return {
       v: 1, room: this.room, hostPub: this.ident.pub, phase: ph, day: s.day, anim: s.anim,
       sentAt: Date.now(), endsIn: s.endsAt ? Math.max(0, s.endsAt - Date.now()) : null,
-      players: s.players.map((p) => ({ id: p.id, name: p.name, alive: p.alive, host: !!p.host, death: p.death, done: done(p) })),
+      players: s.players.map((p) => ({ id: p.id, name: p.name, alive: p.alive, host: !!p.host, bot: !!p.bot, death: p.death, done: done(p) })),
       cfg: s.cfg, cfgAuto: s.cfgAuto, settings: s.settings, candidates: s.candidates, voteResult: vr,
       skip: s.skip.length, winner: s.winner, reveal: ph === 'end' ? s.roles : null, history: s.history,
+      scores: Object.fromEntries(s.players.map((p) => [p.id, s.scores[p.id] || 0])), round: s.round, lastResult: s.lastResult, pts: ph === 'lobby' ? points(s.cfg) : s.pts,
     };
   }
 
@@ -458,7 +564,8 @@ export class Engine {
     const pub = this.pubState();
     this.net.pub(`${this.room}/state`, pub, true);
     this.onPublic?.(pub);
-    for (const p of this.s.players) this.sendPriv(p.id);
+    for (const p of this.s.players) if (!p.bot) this.sendPriv(p.id);
+    setTimeout(() => this.botTick(), 0);
     if (!this.P(this.localPid)) this.sendPrivRaw(this.localPid, { joined: false, phase: this.s.phase });
   }
 

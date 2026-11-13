@@ -106,3 +106,13 @@ export function validate(cfgIn, n) {
   if (c.mason === 1) errs.push(['masonPair']);
   return errs;
 }
+
+// 勝敗の点数：勝ちにくい側ほど勝ったときの点が高く、勝ちやすい側ほど負けたときの減点が大きい
+export function points(cfg) {
+  const b = balance(cfg);
+  if (!b) return null;
+  const f = (p) => ({ win: Math.max(4, Math.round(20 * (1 - p))), lose: Math.max(1, Math.round(10 * p)) });
+  const o = { village: f(b.village), wolf: f(b.wolf) };
+  if (b.fox) o.fox = f(b.fox);
+  return o;
+}

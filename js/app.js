@@ -1,5 +1,5 @@
 import { t, setLang, getLang, detectLang, LANGS, roleName, roleShort, roleAbility, list, joinNames } from './i18n.js';
-import { ROLE_ORDER, ROLES, roleIcon, recommend, balance, validate, total, full } from './roles.js';
+import { ROLE_ORDER, ROLES, roleIcon, recommend, balance, validate, total, full, points } from './roles.js';
 import { connect, newRoomCode, makeIdentity, loadIdentity } from './net.js';
 import { Engine } from './engine.js';
 import { Client } from './client.js';
@@ -21,7 +21,8 @@ window.__app = app;
 /* ---------- 小物 ---------- */
 const COLORS = ['#e0785a', '#d9a441', '#8fb573', '#4fae9b', '#5b9bd5', '#8a7cf0', '#c46aa8', '#e06a8a', '#a08a6a', '#6fb0c9', '#b5a642', '#9a6fd0'];
 function colorOf(id) { let h = 0; for (const c of String(id)) h = (h * 31 + c.charCodeAt(0)) >>> 0; return COLORS[h % COLORS.length]; }
-const av = (p, size = '') => `<span class="av ${size}" style="--c:${colorOf(p.id)}">${esc([...p.name][0] || '?')}</span>`;
+const initial = (name) => [...String(name).replace(/^CPU\s+/, '')][0] || '?';
+const av = (p, size = '') => `<span class="av ${size}" style="--c:${colorOf(p.id)}">${esc(initial(p.name))}</span>`;
 const nameOf = (id) => app.client?.pub?.players.find((p) => p.id === id)?.name ?? '?';
 const icon = {
   sound: '<svg viewBox="0 0 24 24" width="20" height="20"><path d="M4 9h4l5-4v14l-5-4H4z" fill="currentColor"/><path d="M16 8.5a5 5 0 0 1 0 7M18.5 6a8.5 8.5 0 0 1 0 12" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>',
@@ -301,8 +302,37 @@ function balanceMeter(cfg) {
     <div class="bal-h"><span>${esc(t('balance'))}</span><b class="bal-${b.label}">${esc(t('bal_' + b.label))}</b></div>
     <div class="bal-bar"><i class="bv" style="width:${v}%"></i>${b.fox ? `<i class="bf" style="width:${f}%"></i>` : ''}<i class="bw" style="width:${w}%"></i></div>
     <div class="bal-legend"><span class="lv">${esc(t('villageSide'))} ${v}%</span>${b.fox ? `<span class="lf">${esc(t('foxSide'))} ${f}%</span>` : ''}<span class="lw">${esc(t('wolfSide'))} ${w}%</span></div>
+    ${ptsHtml(cfg)}
     <p class="note">${esc(t('balNote'))}</p>
   </div>`;
+}
+function ptsHtml(cfg) {
+  const p = points(cfg);
+  if (!p) return '';
+  const row = (k, cls, label) => p[k] ? `<div class="pts ${cls}"><span>${esc(label)}</span><b>${esc(t('ptsLine', { w: p[k].win, l: p[k].lose }))}</b></div>` : '';
+  return `<div class="pts-box"><div class="pts-h">${esc(t('ptsTitle'))}</div>${row('village', 'lv', t('villageSide'))}${row('wolf', 'lw', t('wolfSide'))}${row('fox', 'lf', t('foxSide'))}</div>`;
+}
+function scoreboard(pub, { reset = false } = {}) {
+  if (!pub.round) return '';
+  const lr = pub.lastResult || {};
+  const sc = pub.scores || {};
+  const ps = [...pub.players].sort((a, b) => (sc[b.id] || 0) - (sc[a.id] || 0));
+  let prev = null, rank = 0;
+  const rows = ps.map((p, i) => {
+    if (prev === null || sc[p.id] !== prev) rank = i + 1;
+    prev = sc[p.id];
+    const d = lr.deltas?.[p.id];
+    const pr = lr.prevRank?.[p.id];
+    const mv = pr && lr.rank?.[p.id] ? pr - lr.rank[p.id] : 0;
+    const medal = rank <= 3 ? `<span class="medal m${rank}">${rank}</span>` : `<span class="medal">${rank}</span>`;
+    return `<li class="${p.id === app.client.pid ? 'me' : ''}" style="animation-delay:${i * 0.06}s">${medal}${av(p)}<b class="pn">${esc(p.name)}</b>
+      ${mv ? `<span class="mv ${mv > 0 ? 'up' : 'down'}">${mv > 0 ? '▲' : '▼'}${Math.abs(mv)}</span>` : ''}
+      ${d != null ? `<span class="dl ${d > 0 ? 'pos' : d < 0 ? 'neg' : 'zero'}">${d > 0 ? '+' : d < 0 ? '−' : '±'}${Math.abs(d)}</span>` : ''}
+      <span class="sc">${esc(t('pt', { n: sc[p.id] || 0 }))}</span></li>`;
+  }).join('');
+  return `<div class="card score-card"><div class="card-h"><h3>🏆 ${esc(t('scoreboard'))}</h3><span class="note">${esc(t('roundN', { n: pub.round }))}</span></div>
+    <ol class="scores">${rows}</ol><p class="note">${esc(t('scoreNote'))}</p>
+    ${reset ? `<div class="row end"><button class="btn xs ghost" data-act="resetScores">${esc(t('resetScores'))}</button></div>` : ''}</div>`;
 }
 function hostLobby(pub) {
   const e = app.engine;
@@ -328,11 +358,13 @@ function hostLobby(pub) {
       </div>
       <div class="card">
         <h3>${esc(t('playersN', { n }))}</h3>
-        <ul class="plist">${pub.players.map((p) => `<li>${av(p)}<span class="pn">${esc(p.name)}</span>${p.host ? `<span class="badge">${icon.crown}${esc(t('host'))}</span>` : `<button class="btn xs ghost" data-act="kick" data-id="${esc(p.id)}">${esc(t('kick'))}</button>`}</li>`).join('') || `<li class="empty">${esc(t('scanToJoin'))}…</li>`}</ul>
+        <ul class="plist">${pub.players.map((p) => `<li>${av(p)}<span class="pn">${esc(p.name)}</span>${p.bot ? '<span class="badge cpu">CPU</span>' : ''}${p.host ? `<span class="badge">${icon.crown}${esc(t('host'))}</span>` : `<button class="btn xs ghost" data-act="kick" data-id="${esc(p.id)}">${esc(t('kick'))}</button>`}</li>`).join('') || `<li class="empty">${esc(t('scanToJoin'))}…</li>`}</ul>
+        <button class="btn sm ghost add-cpu" data-act="addBot">＋ ${esc(t('addCpu'))}</button>
         <div class="host-join">
           ${hostIn ? `<button class="btn sm ghost" data-act="hostLeave">${esc(t('hostLeave'))}</button>` : `<div class="row"><input id="hostName" maxlength="12" placeholder="${esc(t('hostName'))}" value="${esc(app.inputs.hostName || '')}"><button class="btn sm" data-act="hostJoin">${esc(t('hostPlays'))}</button></div><p class="note">${esc(t('gmNote'))}</p>`}
         </div>
       </div>
+      ${scoreboard(pub, { reset: true })}
     </div>
     <div class="col">
       <div class="card">
@@ -376,6 +408,7 @@ function playerLobby(pub, priv) {
       <ul class="plist">${pub.players.map((p) => `<li class="${p.id === app.client.pid ? 'me' : ''}">${av(p)}<span class="pn">${esc(p.name)}</span>${p.id === app.client.pid ? `<span class="badge me">${esc(t('you'))}</span>` : ''}${p.host ? `<span class="badge">${icon.crown}${esc(t('host'))}</span>` : ''}</li>`).join('')}</ul>
       ${app.ui.editName ? `<div class="row"><input id="renameIn" maxlength="12" value="${esc(app.inputs.renameIn ?? priv.name)}"><button class="btn sm" data-act="rename">${esc(t('save'))}</button></div>` : `<div class="row end"><button class="btn xs ghost" data-act="editName">${esc(t('editName'))}</button><button class="btn xs ghost" data-act="leave">${esc(t('leave'))}</button></div>`}
     </div>
+    ${scoreboard(pub)}
     <div class="card"><h3>${esc(t('rolesInGame'))}</h3>${rolesHtml(full(pub.cfg))}${balanceMeter(pub.cfg)}</div>
     <div class="card"><h3>${esc(t('howTo'))}</h3>${howToHtml()}</div>
   </section>`;
@@ -388,16 +421,25 @@ function partnersHtml(priv) {
   if (priv.role === 'mason') { const x = P(priv.masons || []); return `<div class="partners"><span>${esc(t('partners_mason'))}</span><b>${x.length ? x.join(' / ') : esc(t('noPartner'))}</b></div>`; }
   return '';
 }
+function roleArt(r, cls = '') {
+  return `<span class="art ${cls}">${roleIcon(r, 56)}<img src="img/roles/${r}.webp" alt="" onerror="this.remove()"></span>`;
+}
 function roleCardHtml(priv) {
   const r = priv.role;
+  return `<div class="rcard r-${ROLES[r].team}">
+    <div class="rcard-top">${esc(t('yourRole'))}</div>
+    <div class="rcard-art"><span class="rcard-fallback">${roleIcon(r, 120)}</span><img src="img/roles/${r}.webp" alt="" onerror="this.remove()"></div>
+    <div class="rcard-name lang-${getLang()}"><span>${esc(roleName(r))}</span></div>
+  </div>`;
+}
+function roleDetailHtml(priv) {
+  const r = priv.role;
   const team = ROLES[r].team;
-  return `<div class="role-card" style="--rc:${ROLES[r].color}">
-    <div class="rc-icon">${roleIcon(r, 104)}</div>
-    <div class="rc-name">${esc(roleName(r))}</div>
-    <div class="team t-${team}">${esc(t('team_' + team))}</div>
-    <p class="rc-short">${esc(roleShort(r))}</p>
+  return `<div class="rdetail">
+    <div class="rd-h"><b>${esc(roleName(r))}</b><span class="team t-${team}">${esc(t('team_' + team))}</span></div>
+    <p>${esc(roleShort(r))}</p>
     <p class="rc-ab"><span>${esc(t('ability'))}</span>${esc(roleAbility(r))}</p>
-    <p class="rc-win">🏆 ${esc(t('win_' + team))}</p>
+    <p class="rc-win">${esc(t('win_' + team))}</p>
     ${partnersHtml(priv)}
   </div>`;
 }
@@ -413,7 +455,7 @@ function myPanel(priv) {
   return `<div class="card my">
     <div class="peek ${app.ui.holding ? 'show' : ''}" data-hold>
       <span class="peek-hide">${esc(t('peek'))}</span>
-      <span class="peek-show">${roleIcon(priv.role, 30)}<b>${esc(roleName(priv.role))}</b>${partnersHtml(priv)}${notesHtml(priv)}</span>
+      <span class="peek-show">${roleArt(priv.role, 'sm')}<b>${esc(roleName(priv.role))}</b>${partnersHtml(priv)}${notesHtml(priv)}</span>
     </div>
   </div>`;
 }
@@ -458,11 +500,11 @@ function roleReveal(pub, priv) {
   if (!priv.role) return '';
   const ready = pub.players.filter((p) => p.done).length;
   return `<section class="narrow role-screen">
-    <h2 class="ttl">${esc(t('yourRole'))}</h2>
     <div class="flip ${app.ui.holding ? 'show' : ''}" data-hold>
       <div class="face back"><div class="back-emblem"></div><b>${esc(t('holdToReveal'))}</b><small>${esc(t('holdHint'))}</small></div>
       <div class="face front">${roleCardHtml(priv)}</div>
     </div>
+    <div class="rdetail-wrap ${app.ui.holding ? 'show' : ''}">${roleDetailHtml(priv)}</div>
     <button class="btn primary big" data-act="ready" ${!app.ui.seen || priv.ready ? 'disabled' : ''}>${priv.ready ? '✓ ' : ''}${esc(t('confirmed'))}</button>
     <p class="waiting">${esc(t('waitingOthers', { a: ready, b: pub.players.length }))}</p>
   </section>`;
@@ -584,11 +626,12 @@ function endView(pub, priv) {
   const wins = (r) => (w === 'fox' ? r === 'fox' : ROLES[r]?.team === w);
   const rows = pub.players.map((p) => {
     const r = roles[p.id];
-    return `<li class="${wins(r) ? 'win' : ''} ${p.alive ? '' : 'dead'}">${av(p)}<b class="pn">${esc(p.name)}</b><span class="rr">${roleIcon(r, 22)}${esc(roleName(r))}</span>${tag(p)}${wins(r) ? `<span class="wm">${esc(t('winnerMark'))}</span>` : ''}</li>`;
+    return `<li class="${wins(r) ? 'win' : ''} ${p.alive ? '' : 'dead'}">${av(p)}<b class="pn">${esc(p.name)}</b><span class="rr">${roleArt(r, 'xs')}${esc(roleName(r))}</span>${tag(p)}${wins(r) ? `<span class="wm">${esc(t('winnerMark'))}</span>` : ''}</li>`;
   }).join('');
   const isHost = app.view === 'host';
   return `<section class="narrow">
     <div class="win-banner w-${w}"><div class="wb-i">${roleIcon(w === 'village' ? 'villager' : w === 'wolf' ? 'werewolf' : 'fox', 64)}</div><h2>${esc(t('win_title_' + w))}</h2><p>${esc(t('win_sub_' + w))}</p></div>
+    ${scoreboard(pub)}
     <div class="card"><h3>${esc(t('allRoles'))}</h3><ul class="reveal">${rows}</ul></div>
     ${timelineHtml(pub)}
     ${isHost ? `<button class="btn primary big wide" data-act="again">${esc(t('playAgain'))}</button>` : `<p class="note center-t">${esc(t('waitingHost'))}</p>`}
@@ -734,6 +777,8 @@ const actions = {
   },
   endGame() { if (confirm(t('endConfirm'))) app.engine.backToLobby(); },
   again() { app.engine.backToLobby(); },
+  addBot() { app.engine.addBot(); sound.sfxPlay('join'); },
+  resetScores() { if (confirm(t('resetConfirm'))) app.engine.resetScores(); },
   toggleRoles() { app.ui.showRoles = !app.ui.showRoles; render(); },
 };
 
