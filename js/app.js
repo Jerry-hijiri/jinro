@@ -17,6 +17,10 @@ const app = {
   inputs: {}, lastAnim: null,
 };
 window.__app = app;
+window.__sound = sound;
+const DEMO = params.get('demo') === '1';
+const AUTO = params.get('auto') === '1';
+if (params.get('mute') === '1') { sound.bgmOn = false; sound.sfxOn = false; }
 
 /* ---------- 小物 ---------- */
 const COLORS = ['#e0785a', '#d9a441', '#8fb573', '#4fae9b', '#5b9bd5', '#8a7cf0', '#c46aa8', '#e06a8a', '#a08a6a', '#6fb0c9', '#b5a642', '#9a6fd0'];
@@ -58,7 +62,9 @@ async function boot() {
   const r = params.get('r');
   if (host) await startHost(host.toUpperCase());
   else if (r) await startPlayer(r.toUpperCase(), params.get('b'));
+  else if (DEMO) await startHost(null);
   else { app.view = 'home'; sound.play('title'); render(); }
+  if (AUTO) setInterval(autoStep, 900);
   setInterval(tickTimers, 250);
 }
 
@@ -80,6 +86,12 @@ async function startHost(code) {
     net.status.on((s) => { app.status = s; renderHeader(); });
     restoreAnim();
     await engine.init();
+    if (DEMO && !code) {
+      for (let i = 0; i < 7; i++) engine.addBot();
+      engine.setSetting('discuss', 60);
+      app.ui.showRoles = true;
+      try { parent.postMessage({ demoRoom: room }, '*'); } catch {}
+    }
     history.replaceState(null, '', `?host=${room}${MODE === 'bc' ? '&t=bc' : ''}`);
     try { localStorage.setItem('mj-last-host', room); } catch {}
   } catch (e) {
@@ -104,7 +116,7 @@ async function startPlayer(room, b) {
   }
 }
 
-function restoreAnim() { try { app.lastAnim = sessionStorage.getItem('mj-anim-' + app.room); } catch {} }
+function restoreAnim() { try { app.lastAnim = sessionStorage.getItem('mj-anim-' + app.room + '-' + app.view); } catch {} }
 
 let lastPhase = null;
 function onUpdate() {
@@ -125,7 +137,7 @@ function handleAnim(pub) {
   const a = pub.anim;
   if (!a || a.id === app.lastAnim) return;
   app.lastAnim = a.id;
-  try { sessionStorage.setItem('mj-anim-' + app.room, a.id); } catch {}
+  try { sessionStorage.setItem('mj-anim-' + app.room + '-' + app.view, a.id); } catch {}
   const age = (app.client.animAge || 0) + (Date.now() - app.client.recvAt);
   if (age > 15000) return;
   const P = (id) => { const p = pub.players.find((x) => x.id === id) || { id, name: '?' }; return { ...p, color: colorOf(p.id) }; };
@@ -684,6 +696,39 @@ function tickTimers() {
     el.textContent = fmt(ms);
     el.classList.toggle('urgent', ms < 30000);
   });
+}
+
+/* ---------- 自動操作（デモ用：本物の参加者画面をCPUが操作） ---------- */
+const autoState = { key: null, at: 0 };
+function autoStep() {
+  const c = app.client;
+  if (!c?.pub || fx.busy()) return;
+  const pub = c.pub, priv = c.priv;
+  const wait = (key, ms) => { if (autoState.key !== key) { autoState.key = key; autoState.at = Date.now() + ms; } return Date.now() >= autoState.at; };
+  if (!priv?.joined) {
+    if (pub.phase === 'lobby' && $('#joinName') && wait('join', 1500)) { app.inputs.joinName = params.get('name') || 'CPU アオイ'; actions.join(); }
+    return;
+  }
+  const me = pub.players.find((p) => p.id === c.pid);
+  const ph = pub.phase;
+  if (ph === 'role' && !priv.ready) {
+    if (!app.ui.seen && wait('hold', 1500)) { app.ui.holding = true; app.ui.seen = true; sound.sfxPlay('reveal'); render(); setTimeout(() => { app.ui.holding = false; render(); }, 3500); autoState.key = 'held'; autoState.at = Date.now() + 4500; }
+    else if (app.ui.seen && autoState.key === 'held' && Date.now() >= autoState.at) actions.ready();
+    return;
+  }
+  if (!me?.alive) return;
+  const pickFrom = (ids) => ids[Math.floor(Math.random() * ids.length)];
+  if (ph === 'night' && priv.act && !priv.acted) {
+    const k = 'night' + pub.day;
+    if (!app.ui.sel && wait(k, 2500)) { app.ui.sel = pickFrom(priv.act.targets); sound.sfxPlay('select'); render(); autoState.key = k + 's'; autoState.at = Date.now() + 1800; }
+    else if (app.ui.sel && autoState.key === k + 's' && Date.now() >= autoState.at) actions.doAct();
+  }
+  if (ph === 'day' && !priv.skipped && wait('day' + pub.day, 20000)) actions.skip();
+  if (ph === 'vote' && !priv.voted && priv.voteTargets) {
+    const k = 'vote' + pub.day + (pub.candidates ? 'r' : '');
+    if (!app.ui.sel && wait(k, 2500)) { app.ui.sel = pickFrom(priv.voteTargets); sound.sfxPlay('select'); render(); autoState.key = k + 's'; autoState.at = Date.now() + 1800; }
+    else if (app.ui.sel && autoState.key === k + 's' && Date.now() >= autoState.at) actions.doVote();
+  }
 }
 
 /* ---------- 操作 ---------- */

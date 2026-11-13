@@ -231,6 +231,32 @@ const TRACKS = {
 };
 
 const SFX = {
+  growl(s, t) {
+    const ctx = s.ctx;
+    const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(70, t); o.frequency.linearRampToValueAtTime(95, t + 0.6); o.frequency.linearRampToValueAtTime(60, t + 1.4);
+    const am = ctx.createOscillator(); am.frequency.value = 23; const ag = ctx.createGain(); ag.gain.value = 0.5; am.connect(ag);
+    const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(0.35, t + 0.2); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.5); ag.connect(g.gain);
+    const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 500;
+    o.connect(f); f.connect(g); g.connect(s.sfx);
+    o.start(t); am.start(t); o.stop(t + 1.6); am.stop(t + 1.6);
+    s.noise(t, 1.3, { ft: 'bandpass', f: 300, q: 2, gain: 0.12 });
+  },
+  gore(s, t) {
+    for (let i = 0; i < 4; i++) s.noise(t + i * 0.07 + Math.random() * 0.05, 0.18, { ft: 'lowpass', f: 900 - i * 120, f2: 200, gain: 0.35 });
+    s.noise(t + 0.25, 0.8, { ft: 'bandpass', f: 1800, f2: 600, q: 0.8, gain: 0.08 });
+  },
+  blade(s, t) {
+    s.noise(t, 0.24, { ft: 'bandpass', f: 2500, f2: 8000, q: 2, gain: 0.35 });
+    s.tone(1800, t, 0.22, { type: 'sawtooth', gain: 0.04, dest: s.sfx, glide: 400, lp: 4000 });
+  },
+  thud(s, t) {
+    s.tone(85, t, 0.9, { type: 'sine', gain: 0.85, dest: s.sfx, glide: 28 });
+    s.noise(t, 0.4, { ft: 'lowpass', f: 1600, f2: 120, gain: 0.7, rev: 0.7 });
+    s.tone(320, t, 0.5, { type: 'square', gain: 0.05, dest: s.sfx, glide: 90, lp: 1200 });
+  },
+  crowd(s, t) {
+    for (let i = 0; i < 5; i++) s.noise(t + i * 0.15, 2.2, { ft: 'bandpass', f: 500 + i * 140, q: 1.5, gain: 0.05, a: 0.4 });
+  },
   click(s, t) { s.tone(1400, t, 0.05, { type: 'square', gain: 0.03, dest: s.sfx, lp: 3000 }); },
   select(s, t) { s.tone(880, t, 0.12, { type: 'triangle', gain: 0.08, dest: s.sfx }); s.tone(1320, t + 0.05, 0.15, { type: 'triangle', gain: 0.06, dest: s.sfx }); },
   confirm(s, t) { [660, 880, 1320].forEach((f, i) => s.tone(f, t + i * 0.07, 0.4, { type: 'sine', gain: 0.08, dest: s.sfx, rev: 0.3 })); },

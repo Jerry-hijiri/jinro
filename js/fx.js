@@ -89,6 +89,21 @@ export function nightfall(day) {
   return p;
 }
 
+// 場面画（ChatGPTで生成した絵）。読み込めなければ従来の演出に戻す
+const SCENES = {};
+function scene(name) {
+  if (!SCENES[name]) {
+    SCENES[name] = new Promise((res) => { const im = new Image(); im.onload = () => res(true); im.onerror = () => res(false); im.src = `img/scenes/${name}.webp`; });
+  }
+  return SCENES[name];
+}
+const SCENE_NAMES = ['kill', 'guillotine_plate', 'blade'];
+const sceneOk = {};
+SCENE_NAMES.forEach((n) => scene(n).then((ok) => { sceneOk[n] = ok; }));
+
+const drips = (n = 14) => Array.from({ length: n }, () => `<i style="left:${(Math.random() * 100).toFixed(1)}%;--h:${(18 + Math.random() * 40).toFixed(0)}vh;--w:${(3 + Math.random() * 7).toFixed(1)}px;animation-delay:${(Math.random() * 1.2).toFixed(2)}s"></i>`).join('');
+const spray = (n = 26) => Array.from({ length: n }, () => { const a = -Math.PI * (0.08 + Math.random() * 0.84); const d = 14 + Math.random() * 46; const sz = 2 + Math.random() * 6; return `<i style="--x:${(Math.cos(a) * d).toFixed(1)}vmin;--y:${(Math.sin(a) * d * 0.9).toFixed(1)}vmin;--r:${(a * 180 / Math.PI + 90).toFixed(0)}deg;--w:${sz.toFixed(1)}px;--l:${(sz * (3 + Math.random() * 5)).toFixed(0)}px;animation-delay:${(Math.random() * .18).toFixed(2)}s"></i>`; }).join('');
+
 export function morning(day, victims) {
   if (!victims.length) {
     const p = mount('fx-morning', `<div class="dawn"></div><div class="sun"></div>${village(false)}
@@ -98,34 +113,50 @@ export function morning(day, victims) {
   }
   const names = joinNames(victims.map((v) => v.name));
   const cards = victims.map((v) => `<div class="vcard"><div class="av" style="--c:${v.color}">${esc([...v.name.replace(/^CPU\s+/, '')][0] || '?')}</div><b>${esc(v.name)}</b></div>`).join('');
-  const p = mount('fx-kill', `
-    <div class="redsky"></div><div class="moon red"><span></span></div>
+  const real = sceneOk.kill;
+  const p = mount('fx-kill' + (real ? ' real' : ''), `
+    ${real ? '<div class="scene-img" style="background-image:url(img/scenes/kill.webp)"></div><div class="lightning"></div>' : '<div class="redsky"></div><div class="moon red"><span></span></div>'}
     <div class="kill-stage">${cards}</div>
-    <svg class="claws" viewBox="0 0 100 100" preserveAspectRatio="none">
-      <path pathLength="100" d="M18 8 Q40 45 70 96"/><path pathLength="100" d="M32 4 Q54 42 84 92"/><path pathLength="100" d="M46 2 Q68 38 98 86"/>
-    </svg>
-    <div class="splat"></div><div class="vignette"></div>
-    <div class="center-text low"><h2>${esc(t('morningN', { n: day }))}</h2><p>${esc(t('morningDead', { names }))}</p></div>`, 10000);
+    <div class="slashes"><i></i><i></i><i></i></div>
+    <div class="splat"></div><div class="mist"></div><div class="drips">${drips()}</div><div class="vignette"></div>
+    <div class="center-text low"><h2>${esc(t('morningN', { n: day }))}</h2><p>${esc(t('morningDead', { names }))}</p></div>`, 11000);
   const c = mount.last;
   sound.sfxPlay('heartbeat');
+  c.at(1200, () => sound.sfxPlay('growl'));
   c.at(2600, () => { c.el.classList.add('strike'); sound.sfxPlay('slash'); });
-  c.at(3200, () => { sound.sfxPlay('impact'); });
-  c.at(4200, () => sound.sfxPlay('bell'));
+  c.at(3100, () => { sound.sfxPlay('impact'); sound.sfxPlay('gore'); });
+  c.at(4600, () => sound.sfxPlay('bell'));
   return p;
 }
 
 export function execution(victim, lot) {
-  const p = mount('fx-exec', `
+  const real = sceneOk.guillotine_plate && sceneOk.blade;
+  const ini = esc([...victim.name.replace(/^CPU\s+/, '')][0] || '?');
+  const p = mount('fx-exec' + (real ? ' real' : ''), real ? `
+    <div class="gstage"><div class="gscene"><div class="gmist"></div>
+      <svg class="ghead" viewBox="0 0 100 110"><defs><radialGradient id="hg" cx="40%" cy="35%" r="70%"><stop offset="0" stop-color="#3a2a22"/><stop offset=".7" stop-color="#140c09"/><stop offset="1" stop-color="#050302"/></radialGradient></defs><path d="M50 4C25 4 10 22 10 48c0 22 12 40 26 50 8 6 20 6 28 0 14-10 26-28 26-50C90 22 75 4 50 4z" fill="url(#hg)"/><path d="M12 40C10 16 30 0 54 2c24 2 38 22 34 42-6-14-18-22-38-22S16 30 12 40z" fill="#070403"/><path d="M14 44c4-18 20-30 40-28 18 2 30 14 32 30-8-8-14-10-20-6-10-8-26-8-36 2-6-2-12 0-16 2z" fill="#030201"/><path d="M20 70c6 14 18 24 30 24s24-10 30-24c-6 8-18 14-30 14S26 78 20 70z" fill="#000" opacity=".5"/></svg>
+      <img class="gblade" src="img/scenes/blade.webp" alt="">
+      <div class="spray">${spray(34)}</div>
+    </div></div>
+    <div class="streak"></div><div class="flashw"></div><div class="drips">${drips(18)}</div><div class="vignette"></div>
+    <div class="ecard top"><div class="av" style="--c:${victim.color}">${ini}</div><b>${esc(victim.name)}</b></div>
+    <div class="center-text low"><p>${lot ? esc(t('lot')) + '<br>' : ''}${esc(t('executed', { name: victim.name }))}</p></div>` : `
     <div class="dark"></div><div class="spot"></div>
     <svg class="rope" viewBox="0 0 60 300"><path d="M30 0V210"/><ellipse cx="30" cy="238" rx="17" ry="27"/><path d="M24 205h12v14H24z"/></svg>
-    <div class="ecard"><div class="av" style="--c:${victim.color}">${esc([...victim.name.replace(/^CPU\s+/, '')][0] || '?')}</div><b>${esc(victim.name)}</b></div>
+    <div class="ecard"><div class="av" style="--c:${victim.color}">${ini}</div><b>${esc(victim.name)}</b></div>
     <div class="stamp">${esc(t('tag_exec'))}</div>
     <div class="ash"></div>
-    <div class="center-text low"><p>${lot ? esc(t('lot')) + '<br>' : ''}${esc(t('executed', { name: victim.name }))}</p></div>`, 8600);
+    <div class="center-text low"><p>${lot ? esc(t('lot')) + '<br>' : ''}${esc(t('executed', { name: victim.name }))}</p></div>`, 9500);
   const c = mount.last;
   sound.sfxPlay('drumroll');
-  c.at(3300, () => { c.el.classList.add('hit'); sound.sfxPlay('stamp'); });
-  c.at(5200, () => c.el.classList.add('fall'));
+  if (real) {
+    c.at(3300, () => { c.el.classList.add('drop'); sound.sfxPlay('blade'); });
+    c.at(3480, () => { c.el.classList.add('hit'); sound.sfxPlay('thud'); sound.sfxPlay('gore'); });
+    c.at(4600, () => sound.sfxPlay('crowd'));
+  } else {
+    c.at(3300, () => { c.el.classList.add('hit'); sound.sfxPlay('stamp'); });
+    c.at(5200, () => c.el.classList.add('fall'));
+  }
   return p;
 }
 
