@@ -585,6 +585,21 @@ function cupidPick(pub, act) {
   return `${grid(pub.players.filter((p) => p.alive), { selectable: true, targets: act.targets, selectedList: m })}
     <div class="sticky-act"><button class="btn primary big" data-act="doAct" ${ok ? '' : 'disabled'}>${ok ? `${esc(t('decide'))}：${m.map((id) => esc(nameOf(id))).join(' ＆ ')}` : esc(t('pick2', { n: 2 - m.length }))}</button></div>`;
 }
+// 夜の操作を決めた直後に、その人の画面にだけ出す結果
+function actResultHtml(priv) {
+  const r = priv.actResult;
+  if (!r) return '';
+  const resWord = (x) => (x === 'wolf' ? t('resWolf') : t('resHuman'));
+  let title = '', body = '', cls = '';
+  if (r.kind === 'divine') { title = t('res_divine'); body = `<div class="ar-name">${esc(nameOf(r.target))}</div><div class="ar-res ${r.res}">${esc(resWord(r.res))}</div>`; cls = r.res; }
+  else if (r.kind === 'medium') { title = t('res_medium'); body = `<div class="ar-name">${esc(nameOf(r.target))}</div><div class="ar-res ${r.res}">${esc(resWord(r.res))}</div>`; cls = r.res; }
+  else if (r.kind === 'guard') { title = t('res_guard'); body = `<div class="ar-name">${esc(nameOf(r.target))}</div>`; }
+  else if (r.kind === 'kill') { title = t('res_kill'); body = `<div class="ar-name">${esc(nameOf(r.target))}</div>`; cls = 'wolf'; }
+  else if (r.kind === 'wolfFirst') { title = t('res_wolfFirst'); body = `<div class="ar-name">${esc(nameOf(r.target))}</div>`; cls = 'wolf'; }
+  else if (r.kind === 'cupid') { title = t('res_cupid'); body = `<div class="ar-name">${(r.targets || []).map((id) => esc(nameOf(id))).join('<i> ＆ </i>')}</div>`; cls = 'love'; }
+  else return '';
+  return `<div class="card act-result ${cls}"><div class="ar-title">${roleIcon(priv.role, 34)}<span>${esc(title)}</span></div>${body}</div>`;
+}
 function nightView(pub, priv) {
   const act = priv.act;
   const pr = progress(pub);
@@ -594,14 +609,15 @@ function nightView(pub, priv) {
   if (!act) return `<section class="narrow">${head}</section>`;
   if (priv.acted) {
     return `<section class="narrow">${head}
-      <div class="card msg night-msg"><div class="zzz">☾</div><p><b>${esc(t('acted'))}</b>${priv.actTarget ? `：${esc([].concat(priv.actTarget).map(nameOf).join(' ＆ '))}` : ''}</p><p class="waiting">${esc(t('waitDawn', pr))}</p>${pack}</div>
+      ${actResultHtml(priv)}
+      <div class="card msg night-msg"><div class="zzz">☾</div><p><b>${esc(t('acted'))}</b>${priv.actTarget && !priv.actResult ? `：${esc([].concat(priv.actTarget).map(nameOf).join(' ＆ '))}` : ''}</p><p class="waiting">${esc(t('waitDawn', pr))}</p>${pack}</div>
       ${myPanel(priv)}</section>`;
   }
   const prompt = t('act_' + act.kind);
   const players = pub.players.filter((p) => p.alive || act.targets.includes(p.id));
   return `<section class="narrow">${head}
     <div class="card prompt-card"><p class="prompt">${esc(prompt)}</p>${act.kind === 'suspect' ? `<p class="note">${esc(t('act_suspectNote'))}</p>` : act.kind === 'cupid' ? `<p class="note">${esc(t('act_cupidNote'))}</p>` : ''}${pack}</div>
-    ${act.kind === 'cupid' ? cupidPick(pub, act) : `${grid(players.filter((p) => p.alive), { selectable: true, targets: act.targets, selected: app.ui.sel })}
+    ${act.kind === 'cupid' ? cupidPick(pub, act) : `${grid(act.kind === 'medium' ? pub.players.filter((p) => act.targets.includes(p.id)) : players.filter((p) => p.alive), { selectable: true, targets: act.targets, selected: app.ui.sel })}
     <div class="sticky-act"><button class="btn primary big" data-act="doAct" ${app.ui.sel && act.targets.includes(app.ui.sel) ? '' : 'disabled'}>${esc(t('decide'))}${app.ui.sel ? `：${esc(nameOf(app.ui.sel))}` : ''}</button></div>`}
     ${myPanel(priv)}
   </section>`;

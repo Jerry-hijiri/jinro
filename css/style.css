@@ -848,3 +848,15 @@ main, .top { position: relative; z-index: 1; }
 .death .d-follow { font-family: var(--serif); font-size: clamp(18px, 5vw, 30px); color: #f6a8c8; margin-top: 14px; opacity: 0; text-shadow: 0 2px 10px #000; }
 .fx-vid.final .vid-end .death .d-follow { animation: dFade .9s 1.8s forwards; }
 .fx-exec .death .d-follow { animation: dFade .9s 6s forwards; }
+
+/* 夜の操作の直後に出る結果 */
+.act-result { text-align: center; margin: 6px 0 12px; border-width: 2px; animation: rise .5s cubic-bezier(.2, .9, .3, 1); }
+.act-result .ar-title { display: inline-flex; align-items: center; gap: 10px; font-family: var(--serif); font-size: 15px; color: var(--muted); margin-bottom: 8px; }
+.act-result .ar-name { font-family: 'Shippori Mincho B1', var(--serif); font-weight: 800; font-size: clamp(30px, 9vw, 44px); line-height: 1.2; color: #fff3ec; }
+.act-result .ar-name i { font-style: normal; font-size: .6em; color: var(--muted); }
+.act-result .ar-res { display: inline-block; margin-top: 10px; padding: 6px 22px; border-radius: 4px; font-family: var(--serif); font-weight: 800; font-size: clamp(24px, 7vw, 34px); letter-spacing: .1em; }
+.act-result .ar-res.human { background: rgba(63, 155, 78, .2); color: #9ee0a8; border: 2px solid var(--c-village); }
+.act-result .ar-res.wolf { background: rgba(200, 48, 42, .22); color: #ffaaa3; border: 2px solid var(--c-wolf); animation: pulse 1.2s 2; }
+.act-result.wolf { border-color: rgba(200, 48, 42, .6); }
+.act-result.human { border-color: rgba(63, 155, 78, .55); }
+.act-result.love { border-color: rgba(224, 122, 168, .6); }
