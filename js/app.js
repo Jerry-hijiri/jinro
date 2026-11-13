@@ -64,6 +64,17 @@ async function boot() {
   if (host) await startHost(host.toUpperCase());
   else if (r) await startPlayer(r.toUpperCase(), params.get('b'));
   else if (DEMO) await startHost(null);
+  else if (params.get('play')) {
+    const main = $('#main');
+    main.innerHTML = `<section class="center"><div class="card msg" style="display:grid;gap:10px"><h2>演出の確認</h2>
+      <button class="btn danger big" id="pk">▶ 襲撃の映像</button><button class="btn big" id="pe">▶ 処刑（ギロチン）</button><button class="btn ghost big" id="pi">▶ 開幕</button>
+      <p class="note">音が出ます（タップで途中スキップ）</p></div></section>`;
+    $('#pk').onclick = () => fx.morning(2, [{ id: 'x1', name: 'はなこ', color: '#5b9bd5' }]);
+    $('#pe').onclick = () => fx.execution({ id: 'x2', name: 'たろう', color: '#c46aa8' }, false);
+    $('#pi').onclick = () => fx.intro();
+    renderHeader();
+    return;
+  }
   else { app.view = 'home'; sound.play('title'); render(); }
   if (AUTO) setInterval(autoStep, 900);
   setInterval(tickTimers, 250);
