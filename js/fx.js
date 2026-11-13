@@ -51,7 +51,7 @@ function mount(cls, html, ms, { skippable = true } = {}) {
       done = true;
       timers.forEach(clearTimeout);
       el.classList.add('out');
-      setTimeout(() => { el.remove(); if (current === ctrl) current = null; resolve(); }, 600);
+      setTimeout(() => { el.remove(); if (current === ctrl) current = null; resolve(); window.dispatchEvent(new Event('fx-done')); }, 600);
     };
     const ctrl = { el, finish, at: (ms2, f) => timers.push(setTimeout(f, ms2)) };
     if (current) current.finish();
@@ -97,14 +97,17 @@ function scene(name) {
   }
   return SCENES[name];
 }
-const SCENE_NAMES = ['kill', 'guillotine_plate', 'blade'];
+const SCENE_NAMES = ['kill', 'guillotine_plate', 'blade', 'alley'];
 const sceneOk = {};
+let gore = true;
+export function setGore(v) { gore = !!v; }
 SCENE_NAMES.forEach((n) => scene(n).then((ok) => { sceneOk[n] = ok; }));
 
 const drips = (n = 14) => Array.from({ length: n }, () => `<i style="left:${(Math.random() * 100).toFixed(1)}%;--h:${(18 + Math.random() * 40).toFixed(0)}vh;--w:${(3 + Math.random() * 7).toFixed(1)}px;animation-delay:${(Math.random() * 1.2).toFixed(2)}s"></i>`).join('');
 const spray = (n = 26) => Array.from({ length: n }, () => { const a = -Math.PI * (0.08 + Math.random() * 0.84); const d = 14 + Math.random() * 46; const sz = 2 + Math.random() * 6; return `<i style="--x:${(Math.cos(a) * d).toFixed(1)}vmin;--y:${(Math.sin(a) * d * 0.9).toFixed(1)}vmin;--r:${(a * 180 / Math.PI + 90).toFixed(0)}deg;--w:${sz.toFixed(1)}px;--l:${(sz * (3 + Math.random() * 5)).toFixed(0)}px;animation-delay:${(Math.random() * .18).toFixed(2)}s"></i>`; }).join('');
 
 export function morning(day, victims) {
+  if (victims.length && gore && sceneOk.alley && sceneOk.kill) return ambush(day, victims);
   if (!victims.length) {
     const p = mount('fx-morning', `<div class="dawn"></div><div class="sun"></div>${village(false)}
       <div class="center-text"><h2>${esc(t('morningN', { n: day + 0 }))}</h2><p>${esc(t('morningPeace'))}</p></div>`, 7000);
@@ -113,7 +116,7 @@ export function morning(day, victims) {
   }
   const names = joinNames(victims.map((v) => v.name));
   const cards = victims.map((v) => `<div class="vcard"><div class="av" style="--c:${v.color}">${esc([...v.name.replace(/^CPU\s+/, '')][0] || '?')}</div><b>${esc(v.name)}</b></div>`).join('');
-  const real = sceneOk.kill;
+  const real = gore && sceneOk.kill;
   const p = mount('fx-kill' + (real ? ' real' : ''), `
     ${real ? '<div class="scene-img" style="background-image:url(img/scenes/kill.webp)"></div><div class="lightning"></div>' : '<div class="redsky"></div><div class="moon red"><span></span></div>'}
     <div class="kill-stage">${cards}</div>
@@ -129,8 +132,75 @@ export function morning(day, victims) {
   return p;
 }
 
+// 血痕（ふちが不規則でトゲと飛沫のある形を毎回ランダムに描く）
+function splatPath(cx, cy, R) {
+  const n = 22 + Math.floor(Math.random() * 10);
+  const pts = [];
+  for (let i = 0; i < n; i++) {
+    const a = (i / n) * Math.PI * 2;
+    let r = R * (0.55 + Math.random() * 0.35);
+    if (Math.random() < 0.25) r = R * (1.1 + Math.random() * 0.9);
+    pts.push([cx + Math.cos(a) * r, cy + Math.sin(a) * r]);
+  }
+  let d = `M${pts[0][0].toFixed(1)} ${pts[0][1].toFixed(1)}`;
+  for (let i = 1; i <= n; i++) {
+    const p0 = pts[i - 1], p1 = pts[i % n];
+    const mx = (p0[0] + p1[0]) / 2, my = (p0[1] + p1[1]) / 2;
+    d += ` Q${p0[0].toFixed(1)} ${p0[1].toFixed(1)} ${mx.toFixed(1)} ${my.toFixed(1)}`;
+  }
+  return d + 'Z';
+}
+function splatSvg() {
+  let g = '';
+  for (let k = 0; k < 6; k++) {
+    const cx = 10 + Math.random() * 80, cy = 15 + Math.random() * 70, R = 3 + Math.random() * 8;
+    g += `<path class="sp" style="animation-delay:${(Math.random() * .25).toFixed(2)}s;transform-origin:${cx}px ${cy}px" d="${splatPath(cx, cy, R)}"/>`;
+    for (let j = 0; j < 9; j++) {
+      const a = Math.random() * Math.PI * 2, d = R * (1.3 + Math.random() * 2.6), r = 0.25 + Math.random() * 0.9;
+      g += `<circle class="sp" style="animation-delay:${(Math.random() * .3).toFixed(2)}s;transform-origin:${cx}px ${cy}px" cx="${(cx + Math.cos(a) * d).toFixed(1)}" cy="${(cy + Math.sin(a) * d).toFixed(1)}" r="${r.toFixed(2)}"/>`;
+    }
+  }
+  return `<svg viewBox="0 0 100 100" preserveAspectRatio="xMidYMid slice"><defs><radialGradient id="bl" cx="45%" cy="40%" r="70%"><stop offset="0" stop-color="#8e0a05"/><stop offset=".6" stop-color="#5e0000"/><stop offset="1" stop-color="#3a0000"/></radialGradient></defs><g fill="url(#bl)">${g}</g></svg>`;
+}
+
+// 襲撃の映像：逃げる → 振り返る → 安堵 → 黒い影に襲われる → 視点が地面に落ちる
+function ambush(day, victims) {
+  const names = joinNames(victims.map((v) => v.name));
+  const blobs = splatSvg();
+  const p = mount('fx-amb', `
+    <div class="amb-cam">
+      <div class="amb-img a-run" style="background-image:url(img/scenes/alley.webp)"></div>
+      <div class="amb-img a-back" style="background-image:url(img/scenes/alley.webp)"></div>
+      <div class="amb-img a-wolf" style="background-image:url(img/scenes/kill.webp)"></div>
+      <div class="amb-img a-ground" style="background-image:url(img/scenes/alley.webp)"></div>
+    </div>
+    <div class="amb-pan"></div>
+    <div class="amb-black"></div>
+    <div class="slashes"><i></i><i></i><i></i></div>
+    <div class="amb-blood">${blobs}</div>
+    <div class="drips">${drips(16)}</div>
+    <div class="amb-vig"></div>
+    <div class="amb-end"><div class="scene-img" style="background-image:url(img/scenes/kill.webp)"></div>
+      <div class="center-text low"><h2>${esc(t('morningN', { n: day }))}</h2><p>${esc(t('morningDead', { names }))}</p></div></div>`, 16500);
+  const c = mount.last;
+  const step = (cls) => c.el.classList.add(cls);
+  sound.play(null);
+  step('run');
+  sound.sfxPlay('flee');
+  c.at(3800, () => { step('look'); sound.sfxPlay('whoosh'); });
+  c.at(4400, () => { step('calm'); sound.sfxPlay('relief'); });
+  c.at(7000, () => sound.sfxPlay('lowgrowl'));
+  c.at(7700, () => { step('scare'); sound.sfxPlay('roar'); });
+  c.at(8400, () => { step('cut'); sound.sfxPlay('slash'); sound.sfxPlay('gore'); });
+  c.at(8700, () => { step('fall'); sound.sfxPlay('hiss'); sound.sfxPlay('thud'); });
+  c.at(9100, () => sound.sfxPlay('dying'));
+  c.at(11200, () => step('dead'));
+  c.at(12200, () => { step('final'); sound.sfxPlay('bell'); });
+  return p;
+}
+
 export function execution(victim, lot) {
-  const real = sceneOk.guillotine_plate && sceneOk.blade;
+  const real = gore && sceneOk.guillotine_plate && sceneOk.blade;
   const ini = esc([...victim.name.replace(/^CPU\s+/, '')][0] || '?');
   const p = mount('fx-exec' + (real ? ' real' : ''), real ? `
     <div class="gstage"><div class="gscene"><div class="gmist"></div>

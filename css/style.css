@@ -659,3 +659,84 @@ body[data-phase="vote"] .ptok.sel { box-shadow: 0 0 0 2px #d0473f; background: #
 .gmist { position: absolute; left: 40%; top: 42%; width: 20%; height: 22%; border-radius: 50%; background: radial-gradient(circle, rgba(140, 0, 0, .7), transparent 65%); opacity: 0; }
 .fx-exec.hit .gmist { animation: mist 1.6s forwards; }
 .drips i::after { content: ''; position: absolute; bottom: -4px; left: 50%; width: calc(var(--w) * 1.6); height: calc(var(--w) * 1.9); transform: translateX(-50%); border-radius: 50% 50% 50% 50% / 40% 40% 60% 60%; background: #a10d07; }
+
+/* ---------- 襲撃の映像（視点カメラ） ---------- */
+.fx-amb { background: #000; }
+.amb-cam { position: absolute; inset: -8%; will-change: transform; }
+.amb-img { position: absolute; inset: 0; background-size: cover; background-position: center; opacity: 0; will-change: transform, opacity, filter; }
+.fx-amb.run .a-run { opacity: 1; filter: brightness(.55) contrast(1.1); animation: runFwd 3.9s linear forwards; }
+@keyframes runFwd { from { transform: scale(1.02); } to { transform: scale(1.45); filter: brightness(.7) contrast(1.15); } }
+.fx-amb.run .amb-cam { animation: bob .31s ease-in-out infinite alternate; }
+@keyframes bob { from { transform: translate(-1.2%, -1.6%) rotate(-1.2deg); } to { transform: translate(1.2%, 1.6%) rotate(1.2deg); } }
+.fx-amb.run .amb-vig { box-shadow: inset 0 0 22vmin 10vmin #000; }
+.fx-amb.look .a-run { opacity: 0; }
+.fx-amb.look .a-back { opacity: 1; transform: scaleX(-1) scale(1.15); filter: brightness(.45); animation: whip .5s cubic-bezier(.2, .8, .2, 1); }
+@keyframes whip { from { transform: scaleX(-1) scale(1.15) translateX(-35%); filter: blur(14px) brightness(.4); } }
+.fx-amb.look .amb-cam { animation: none; }
+.fx-amb.calm .amb-cam { animation: sway 2.4s ease-in-out infinite alternate; }
+@keyframes sway { from { transform: translate(-.4%, -.5%) rotate(-.3deg); } to { transform: translate(.4%, .5%) rotate(.3deg); } }
+.fx-amb.calm .a-back { animation: calmZoom 3.4s ease-out forwards; }
+@keyframes calmZoom { from { transform: scaleX(-1) scale(1.15); filter: brightness(.45); } to { transform: scaleX(-1) scale(1.05); filter: brightness(.6); } }
+.fx-amb.scare .a-back { opacity: 0; }
+.fx-amb.scare .a-wolf { opacity: 1; transform-origin: 53% 33%; animation: lunge .45s cubic-bezier(.1, .9, .2, 1) forwards; }
+@keyframes lunge { from { transform: scale(1.4); filter: brightness(.2); } to { transform: scale(3.1); filter: brightness(1.15) contrast(1.2); } }
+.fx-amb.scare .amb-cam { animation: hardShake .12s linear infinite; }
+@keyframes hardShake { 0% { transform: translate(2%, -1%); } 50% { transform: translate(-2%, 1.5%); } 100% { transform: translate(1%, 2%); } }
+.amb-black { position: absolute; inset: 0; background: #000; opacity: 0; z-index: 2; }
+.fx-amb.cut .amb-black { opacity: 1; }
+.fx-amb.cut .slashes i { animation: slashIn .14s cubic-bezier(.6, 0, .3, 1) forwards, slashFade 2.4s .5s forwards; }
+.fx-amb.cut .slashes i:nth-child(2) { animation-delay: .08s, .58s; } .fx-amb.cut .slashes i:nth-child(3) { animation-delay: .16s, .66s; }
+.fx-amb.fall .amb-black { opacity: 0; transition: opacity .2s; }
+.fx-amb.fall .a-wolf { opacity: 0; }
+.fx-amb.fall .amb-cam { animation: none; }
+.fx-amb.fall .a-ground { opacity: 1; transform-origin: 50% 70%; animation: headFall .9s cubic-bezier(.5, 0, .6, 1.25) forwards, fadeLife 2.6s .9s forwards; }
+@keyframes headFall { 0% { transform: rotate(0) translateY(0) scale(1.1); filter: brightness(.5); } 70% { transform: rotate(-84deg) translateY(18%) scale(1.25); } 82% { transform: rotate(-78deg) translateY(14%) scale(1.25); } 100% { transform: rotate(-82deg) translateY(17%) scale(1.25); filter: brightness(.55); } }
+@keyframes fadeLife { to { transform: rotate(-82deg) translateY(17%) scale(1.25); filter: brightness(.35) saturate(.2) blur(2px); } }
+.amb-blood { position: absolute; inset: 0; z-index: 3; pointer-events: none; }
+.amb-blood i { position: absolute; width: var(--s); height: var(--s); transform: rotate(var(--r)) scale(0); opacity: 0; border-radius: 46% 54% 38% 62% / 55% 40% 60% 45%; background: radial-gradient(circle at 40% 40%, rgba(160, 10, 5, .95), rgba(90, 0, 0, .9) 55%, rgba(60, 0, 0, 0) 72%); filter: blur(.6px); }
+.fx-amb.fall .amb-blood i { animation: bloodHit .35s cubic-bezier(.2, 1.4, .4, 1) forwards; }
+@keyframes bloodHit { to { transform: rotate(var(--r)) scale(1); opacity: 1; } }
+.fx-amb.fall .drips i { animation: drip 3.6s cubic-bezier(.5, 0, .7, 1) forwards; }
+.amb-vig { position: absolute; inset: 0; z-index: 3; pointer-events: none; transition: box-shadow 2.5s ease; box-shadow: inset 0 0 14vmin 4vmin #000; }
+.fx-amb.fall .amb-vig { box-shadow: inset 0 0 30vmin 22vmin rgba(40, 0, 0, .95); }
+.fx-amb.dead .amb-cam, .fx-amb.dead .amb-blood, .fx-amb.dead .drips, .fx-amb.dead .slashes { opacity: 0; transition: opacity 1s; }
+.amb-end { position: absolute; inset: 0; z-index: 4; opacity: 0; transition: opacity 1.2s; }
+.fx-amb.final .amb-end { opacity: 1; }
+.amb-end .scene-img { animation: none; filter: brightness(.45); transform: scale(1.05); }
+.fx-amb.final .amb-end .scene-img { animation: sceneIn 5s ease forwards; }
+.amb-end .center-text h2, .amb-end .center-text p { animation: none; opacity: 0; }
+.fx-amb.final .amb-end .center-text h2 { animation: textIn 1.4s .3s both; }
+.fx-amb.final .amb-end .center-text p { animation: textIn 1.4s 1s both; color: #ffc7c0; }
+
+/* ================= 真っ暗な部屋に、ろうそく一本 ================= */
+body, body[data-phase] { background: #040302 !important; --panel: rgba(16, 12, 9, .86); --panel2: rgba(30, 23, 16, .8); --line: rgba(120, 90, 50, .28); }
+body[data-phase="vote"], body[data-phase="voteResult"], body[data-phase="execution"] { --panel: rgba(22, 9, 7, .88); --line: rgba(140, 40, 30, .35); }
+.room { position: fixed; inset: 0; z-index: 0; pointer-events: none; }
+.glow { position: absolute; left: 50%; bottom: -20vh; width: 170vmax; height: 170vmax; margin-left: -85vmax; border-radius: 50%; background: radial-gradient(circle at 50% 50%, rgba(255, 170, 70, .26) 0, rgba(200, 110, 40, .12) 18%, rgba(90, 45, 15, .05) 34%, transparent 48%); transform-origin: 50% 50%; animation: flickerGlow 3.2s infinite; }
+@keyframes flickerGlow { 0%, 100% { opacity: .95; transform: scale(1); } 12% { opacity: .78; transform: scale(.985); } 18% { opacity: 1; } 37% { opacity: .86; transform: scale(1.01); } 52% { opacity: .97; } 63% { opacity: .74; transform: scale(.99); } 71% { opacity: .92; } 88% { opacity: .82; } }
+.candle { position: absolute; left: 50%; bottom: 0; width: 26px; margin-left: -13px; opacity: .9; }
+.wax, .age-candle .wax { width: 26px; height: 64px; border-radius: 5px 5px 0 0; background: linear-gradient(90deg, #9c8a6a, #e9dcc0 40%, #c9b896 70%, #8d7b5c); box-shadow: 0 -2px 0 #f3e8cc inset; }
+.flame, .age-candle .flame { position: relative; width: 12px; height: 28px; margin: 0 auto 2px; border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%; background: radial-gradient(ellipse at 50% 80%, #fff8d6 0, #ffd36b 30%, #ff9a2e 60%, rgba(255, 90, 20, 0) 75%); box-shadow: 0 0 18px 6px rgba(255, 170, 60, .45), 0 0 60px 20px rgba(255, 140, 40, .15); transform-origin: 50% 90%; animation: flame 1.6s ease-in-out infinite alternate; }
+.flame::after { content: ''; position: absolute; left: 50%; bottom: -3px; width: 2px; height: 8px; margin-left: -1px; background: #2a1a0e; border-radius: 1px; }
+@keyframes flame { 0% { transform: scaleY(1) rotate(-2deg); } 30% { transform: scaleY(1.12) rotate(2deg); } 60% { transform: scaleY(.92) rotate(-1deg); } 100% { transform: scaleY(1.06) rotate(1.5deg); } }
+main, .top { position: relative; z-index: 1; }
+.top { background: rgba(4, 3, 2, .92); border-bottom-color: rgba(120, 90, 50, .2); }
+.hero-moon { width: 40px; height: auto; background: none; box-shadow: none; animation: none; margin-bottom: 26px; }
+.hero-moon::before { content: ''; display: block; width: 14px; height: 34px; margin: 0 auto 2px; border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%; background: radial-gradient(ellipse at 50% 80%, #fff8d6 0, #ffd36b 30%, #ff9a2e 60%, rgba(255, 90, 20, 0) 75%); box-shadow: 0 0 30px 12px rgba(255, 170, 60, .4), 0 0 120px 50px rgba(255, 140, 40, .12); animation: flame 1.6s ease-in-out infinite alternate; transform-origin: 50% 90%; }
+.hero-moon::after { content: ''; position: static; display: block; width: 30px; height: 70px; margin: 0 auto; border-radius: 5px 5px 0 0; background: linear-gradient(90deg, #9c8a6a, #e9dcc0 40%, #c9b896 70%, #8d7b5c); }
+.hero h1 { color: #e9d2a0; text-shadow: 0 0 24px rgba(255, 160, 60, .25), 0 2px 0 #000; }
+.mini-moon { background: radial-gradient(ellipse at 50% 70%, #fff3c4, #ffb347 55%, rgba(255, 120, 30, 0) 72%); box-shadow: 0 0 12px rgba(255, 160, 60, .5); border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%; width: 14px; height: 22px; animation: flame 1.6s ease-in-out infinite alternate; }
+.moon-sm, .sun-sm { width: 18px; height: 28px; border-radius: 50% 50% 45% 45% / 65% 65% 35% 35%; background: radial-gradient(ellipse at 50% 75%, #fff3c4, #ffb347 50%, rgba(255, 120, 30, 0) 72%); box-shadow: 0 0 16px rgba(255, 160, 60, .5); animation: flame 1.6s ease-in-out infinite alternate; }
+.age { width: min(460px, 100%); text-align: center; }
+.age .modal-body { display: grid; gap: 12px; justify-items: center; padding: 28px 22px; }
+.age h2 { font-size: 22px; color: #ff9a92; }
+.age p { color: var(--muted); }
+.age-btns { display: grid; gap: 8px; width: 100%; margin-top: 6px; }
+.age-candle { margin-bottom: 4px; }
+.age-candle .wax { width: 20px; height: 44px; margin: 0 auto; }
+
+.amb-blood svg { position: absolute; inset: 0; width: 100%; height: 100%; mix-blend-mode: multiply; }
+.amb-blood .sp { transform: scale(0); opacity: 0; }
+.fx-amb.fall .amb-blood .sp { animation: spHit .28s cubic-bezier(.2, 1.3, .4, 1) forwards; }
+@keyframes spHit { to { transform: scale(1); opacity: .93; } }
+.amb-blood { filter: drop-shadow(0 0 1px rgba(40, 0, 0, .6)); }

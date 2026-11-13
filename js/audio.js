@@ -231,6 +231,51 @@ const TRACKS = {
 };
 
 const SFX = {
+  flee(s, t) {
+    // 走る足音・荒い息・速い鼓動（約3.8秒）
+    for (let i = 0; i < 12; i++) {
+      const tt = t + i * 0.31 + Math.random() * 0.03;
+      s.noise(tt, 0.09, { ft: 'lowpass', f: 700, f2: 150, gain: 0.5 });
+      s.tone(70, tt, 0.12, { type: 'sine', gain: 0.35, dest: s.sfx, glide: 45 });
+      s.noise(tt + 0.02, 0.05, { ft: 'highpass', f: 3500, gain: 0.05 });
+    }
+    for (let i = 0; i < 7; i++) {
+      const tt = t + i * 0.55;
+      s.noise(tt, 0.22, { ft: 'bandpass', f: 1100, q: 0.8, gain: 0.16, a: 0.05 });
+      s.noise(tt + 0.26, 0.24, { ft: 'bandpass', f: 800, q: 0.8, gain: 0.12, a: 0.04 });
+    }
+    for (let i = 0; i < 9; i++) s.tone(55, t + i * 0.42, 0.14, { type: 'sine', gain: 0.4, dest: s.sfx, glide: 38 });
+  },
+  whoosh(s, t) { s.noise(t, 0.45, { ft: 'bandpass', f: 400, f2: 2600, q: 0.7, gain: 0.35 }); },
+  relief(s, t) {
+    for (let i = 0; i < 3; i++) {
+      const tt = t + i * 1.1;
+      s.noise(tt, 0.6, { ft: 'bandpass', f: 900, q: 0.7, gain: 0.1 - i * 0.025, a: 0.25 });
+      s.noise(tt + 0.6, 0.5, { ft: 'bandpass', f: 650, q: 0.7, gain: 0.08 - i * 0.02, a: 0.15 });
+    }
+    for (let i = 0; i < 4; i++) s.tone(52, t + i * 0.8, 0.16, { type: 'sine', gain: 0.25 - i * 0.04, dest: s.sfx, glide: 36 });
+    s.noise(t, 3.2, { ft: 'bandpass', f: 450, q: 3, gain: 0.03, a: 1 });
+  },
+  lowgrowl(s, t) { s.tone(48, t, 0.7, { type: 'sawtooth', gain: 0.08, dest: s.sfx, lp: 260, a: 0.3 }); },
+  roar(s, t) {
+    const ctx = s.ctx;
+    for (const [f0, g0] of [[95, 0.5], [140, 0.35], [210, 0.2]]) {
+      const o = ctx.createOscillator(); o.type = 'sawtooth';
+      o.frequency.setValueAtTime(f0 * 1.6, t); o.frequency.exponentialRampToValueAtTime(f0, t + 0.9);
+      const am = ctx.createOscillator(); am.frequency.value = 31; const ag = ctx.createGain(); ag.gain.value = g0 * 0.6; am.connect(ag);
+      const g = ctx.createGain(); g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(g0, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + 1.1); ag.connect(g.gain);
+      const f = ctx.createBiquadFilter(); f.type = 'lowpass'; f.frequency.value = 1400;
+      o.connect(f); f.connect(g); g.connect(s.sfx);
+      const sg = ctx.createGain(); sg.gain.value = 0.6; g.connect(sg); sg.connect(s.rev);
+      o.start(t); am.start(t); o.stop(t + 1.2); am.stop(t + 1.2);
+    }
+    s.noise(t, 1.0, { ft: 'bandpass', f: 900, f2: 300, q: 0.9, gain: 0.5, rev: 0.6 });
+  },
+  hiss(s, t) { s.noise(t, 1.6, { ft: 'highpass', f: 2500, f2: 5000, gain: 0.18, a: 0.02 }); s.noise(t + 0.1, 1.2, { ft: 'bandpass', f: 1200, q: 0.6, gain: 0.08 }); },
+  dying(s, t) {
+    [0, 1.1, 2.6].forEach((d, i) => s.tone(48, t + d, 0.2, { type: 'sine', gain: 0.35 - i * 0.1, dest: s.sfx, glide: 34 }));
+    s.tone(880, t + 3.4, 1.6, { type: 'sine', gain: 0.025, dest: s.sfx, a: 0.4, rev: 0.8 });
+  },
   growl(s, t) {
     const ctx = s.ctx;
     const o = ctx.createOscillator(); o.type = 'sawtooth'; o.frequency.setValueAtTime(70, t); o.frequency.linearRampToValueAtTime(95, t + 0.6); o.frequency.linearRampToValueAtTime(60, t + 1.4);

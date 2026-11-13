@@ -32,6 +32,7 @@
 <script>
   const fit = () => { const ph = document.getElementById('phone'); const h = window.innerHeight - 100; const s = Math.min(1, h / 864, (window.innerWidth * 0.42) / 410); ph.style.transform = `scale(${s})`; ph.parentElement.style.width = (410 * s) + 'px'; };
   addEventListener('resize', fit); fit();
+  try { if (localStorage.getItem('mj-age') !== 'yes' && confirm('このデモには流血・残酷な描写があります。18歳以上ですか？')) localStorage.setItem('mj-age', 'yes'); } catch {}
   addEventListener('message', (e) => {
     if (e.data && e.data.demoRoom) document.getElementById('pl').src = `index.html?r=${e.data.demoRoom}&t=bc&auto=1&mute=1&name=${encodeURIComponent('CPU アオイ')}`;
   });

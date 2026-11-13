@@ -18,6 +18,7 @@ const app = {
 };
 window.__app = app;
 window.__sound = sound;
+window.addEventListener('fx-done', () => { if (app.client?.pub) setBgm(app.client.pub); });
 const DEMO = params.get('demo') === '1';
 const AUTO = params.get('auto') === '1';
 if (params.get('mute') === '1') { sound.bgmOn = false; sound.sfxOn = false; }
@@ -48,6 +49,7 @@ const joinUrl = () => {
 /* ---------- 起動 ---------- */
 async function boot() {
   setLang(detectLang());
+  try { if (!localStorage.getItem('mj-age') && !AUTO && !DEMO) app.ui.modal = 'age'; } catch {}
   const unlock = () => sound.unlock();
   document.addEventListener('pointerdown', unlock, { capture: true });
   document.addEventListener('keydown', unlock, { capture: true });
@@ -133,7 +135,12 @@ function onUpdate() {
   render();
 }
 
+function goreOn(pub) {
+  let age = null; try { age = localStorage.getItem('mj-age'); } catch {}
+  return pub?.settings?.gore !== false && age === 'yes';
+}
 function handleAnim(pub) {
+  fx.setGore(goreOn(pub));
   const a = pub.anim;
   if (!a || a.id === app.lastAnim) return;
   app.lastAnim = a.id;
@@ -150,7 +157,7 @@ function handleAnim(pub) {
 
 function setBgm(pub) {
   const m = { lobby: 'title', intro: 'night', role: 'night', night: 'night', morning: 'day', day: 'day', vote: 'vote', voteResult: 'vote', execution: 'vote', end: pub.winner === 'village' ? 'endVillage' : 'endWolf' };
-  if (pub.phase === 'intro' && fx.busy()) return;
+  if (fx.busy()) return;
   sound.play(m[pub.phase] || 'title');
 }
 
@@ -198,7 +205,7 @@ function renderHeader() {
     ${app.ui.sound ? soundPanel() : ''}`;
   if (h._html !== html) { h.innerHTML = html; h._html = html; }
   const m = $('#modal');
-  const mh = app.ui.modal ? helpModal() : '';
+  const mh = app.ui.modal === 'age' ? ageModal() : app.ui.modal ? helpModal() : '';
   if (m._html !== mh) { m.innerHTML = mh; m._html = mh; m.hidden = !mh; }
 }
 
@@ -285,6 +292,14 @@ function roleEntry(r, count = null) {
 function rolesHtml(cfg = null) {
   return `<div class="role-list">${ROLE_ORDER.filter((r) => !cfg || cfg[r] > 0).map((r) => roleEntry(r, cfg ? cfg[r] : null)).join('')}</div>`;
 }
+function ageModal() {
+  return `<div class="modal-bg"></div>
+  <div class="modal card age" role="dialog" aria-modal="true">
+    <div class="modal-body"><div class="age-candle"><div class="flame"></div><div class="wax"></div></div>
+    <h2>${esc(t('ageTitle'))}</h2><p>${esc(t('ageBody'))}</p>
+    <div class="age-btns"><button class="btn danger big" data-act="ageYes">${esc(t('ageYes'))}</button><button class="btn ghost big" data-act="ageNo">${esc(t('ageNo'))}</button></div></div>
+  </div>`;
+}
 function helpModal() {
   const tab = app.ui.tab;
   return `<div class="modal-bg" data-act="closeModal"></div>
@@ -359,7 +374,7 @@ function hostLobby(pub) {
       <div class="stepper"><button data-act="cfg" data-role="${r}" data-d="-1" ${cfg[r] <= 0 ? 'disabled' : ''} aria-label="-">−</button><span>${cfg[r]}</span><button data-act="cfg" data-role="${r}" data-d="1" ${cfg[r] >= ROLES[r].max ? 'disabled' : ''} aria-label="+">＋</button></div>
     </div>`).join('');
   const sel = (k, opts) => `<select data-change="setting" data-key="${k}">${opts.map(([v, l]) => `<option value="${v}" ${pub.settings[k] == v ? 'selected' : ''}>${esc(l)}</option>`).join('')}</select>`;
-  const tog = (k) => `<label class="sw"><input type="checkbox" data-change="settingB" data-key="${k}" ${pub.settings[k] ? 'checked' : ''}><span></span>${esc(t({ guardTwice: 'optGuard', deadSee: 'optDeadSee', showVotes: 'optShowVotes' }[k]))}</label>`;
+  const tog = (k) => `<label class="sw"><input type="checkbox" data-change="settingB" data-key="${k}" ${pub.settings[k] ? 'checked' : ''}><span></span>${esc(t({ guardTwice: 'optGuard', deadSee: 'optDeadSee', showVotes: 'optShowVotes', gore: 'optGore' }[k]))}</label>`;
   return `<section class="grid2 lobby">
     <div class="col">
       <div class="card invite">
@@ -389,7 +404,7 @@ function hostLobby(pub) {
       <div class="card">
         <h3>${esc(t('settings'))}</h3>
         <div class="set-row"><span>${esc(t('discussTime'))}</span>${sel('discuss', [60, 120, 180, 240, 300, 420, 600].map((s) => [s, t('minutes', { n: s / 60 })]))}</div>
-        ${tog('guardTwice')}${tog('deadSee')}${tog('showVotes')}
+        ${tog('gore')}${tog('guardTwice')}${tog('deadSee')}${tog('showVotes')}
       </div>
       ${errs.length ? `<ul class="errs">${errs.map(([k, v]) => `<li>${esc(t(k, v))}</li>`).join('')}</ul>` : ''}
       <button class="btn primary big start" data-act="start" ${errs.length ? 'disabled' : ''}>${esc(t('start'))}</button>
@@ -774,6 +789,8 @@ const actions = {
   },
   help(el) { app.ui.modal = 'help'; app.ui.tab = el.dataset.tab || 'how'; renderHeader(); },
   tab(el) { app.ui.tab = el.dataset.tab; renderHeader(); },
+  ageYes() { try { localStorage.setItem('mj-age', 'yes'); } catch {} app.ui.modal = null; renderHeader(); sound.sfxPlay('confirm'); },
+  ageNo() { try { localStorage.setItem('mj-age', 'no'); } catch {} app.ui.modal = null; renderHeader(); },
   closeModal() { app.ui.modal = null; renderHeader(); },
   sound() { app.ui.sound = !app.ui.sound; renderHeader(); },
   async copy() {
@@ -835,7 +852,7 @@ function onClick(e) {
   if (f) { e.preventDefault(); f(el); }
 }
 document.addEventListener('keydown', (e) => {
-  if (e.key === 'Escape' && app.ui.modal) actions.closeModal();
+  if (e.key === 'Escape' && app.ui.modal && app.ui.modal !== 'age') actions.closeModal();
   if (e.key === 'Enter' && e.target.id === 'joinName') actions.join();
   if (e.key === 'Enter' && e.target.id === 'codeIn') actions.joinCode();
   if (e.key === 'Enter' && e.target.id === 'hostName') actions.hostJoin();

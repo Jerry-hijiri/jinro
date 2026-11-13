@@ -2,7 +2,7 @@
 import { ROLE_ORDER, ROLES, recommend, validate, full, points, MAX_PLAYERS } from './roles.js';
 import { deriveKey, seal, unseal } from './net.js';
 
-export const T = { intro: 10000, morning: 7500, morningDeath: 10500, voteResult: 7000, exec: 9000, nightMin: 4200 };
+export const T = { intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 9000, nightMin: 4200 };
 
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -20,6 +20,7 @@ export class Engine {
     this.onPublic = null;
     this.s = saved || this.fresh();
     this.s.scores ||= {};
+    if (this.s.settings && !('gore' in this.s.settings)) this.s.settings.gore = true;
     this.s.round ||= 0;
     this.timer = null;
     this.botTimers = new Map();
@@ -29,7 +30,7 @@ export class Engine {
     return {
       phase: 'lobby', day: 0, anim: null, players: [], pubs: {}, nonce: {},
       cfg: recommend(4), cfgAuto: true,
-      settings: { discuss: 240, guardTwice: false, deadSee: true, showVotes: true },
+      settings: { discuss: 240, guardTwice: false, deadSee: true, showVotes: true, gore: true },
       roles: {}, acts: {}, votes: {}, candidates: null, runoffDone: false, lastGuard: null,
       seerLog: {}, mediumLog: [], medPending: null, history: [], winner: null,
       endsAt: null, next: null, ready: [], skip: [], voteResult: null, nightStart: 0,
