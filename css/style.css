@@ -805,3 +805,27 @@ main, .top { position: relative; z-index: 1; }
 .a2hs { text-align: left; margin: 4px 0 8px; padding-left: 20px; display: grid; gap: 6px; color: var(--ink); font-size: 14px; }
 :fullscreen body, body:fullscreen { overflow-y: auto; }
 :root:fullscreen { background: #040302; }
+
+/* 死んだ人の名前を大きく */
+.death { position: absolute; left: 0; right: 0; top: 50%; transform: translateY(-50%); z-index: 6; text-align: center; padding: 0 18px; pointer-events: none; }
+.death .d-head { font-family: var(--serif); font-size: clamp(22px, 6vw, 40px); color: #f3e6c8; letter-spacing: .14em; margin-bottom: 14px; opacity: 0; text-shadow: 0 2px 12px #000; }
+.death .d-pre { font-family: var(--serif); font-size: clamp(16px, 4.5vw, 26px); color: #e8d7b0; letter-spacing: .2em; margin-bottom: 10px; opacity: 0; text-shadow: 0 2px 10px #000; }
+.death .d-names { display: grid; gap: 4px; }
+.death .d-names span { display: block; font-family: 'Shippori Mincho B1', var(--serif); font-weight: 800; font-size: clamp(56px, min(17vw, 22vh), 180px); line-height: 1.08; color: #fff3ec; letter-spacing: .06em; word-break: break-all; opacity: 0;
+  text-shadow: 0 0 2px #2a0000, 0 3px 0 #3a0000, 0 0 28px rgba(220, 20, 10, .85), 0 0 70px rgba(160, 0, 0, .7); }
+.death .d-sub { font-family: var(--serif); font-size: clamp(18px, 5vw, 30px); color: #ffb3aa; letter-spacing: .12em; margin-top: 12px; opacity: 0; text-shadow: 0 2px 10px #000; }
+@keyframes nameSlam { 0% { opacity: 0; transform: scale(1.9); filter: blur(10px); } 55% { opacity: 1; transform: scale(.96); filter: blur(0); } 100% { opacity: 1; transform: scale(1); } }
+@keyframes dFade { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: none; } }
+.fx-vid.final .vid-end .death .d-head, .fx-amb.final .death .d-head { animation: dFade .9s .1s forwards; }
+.fx-vid.final .vid-end .death .d-pre { animation: dFade .9s .1s forwards; }
+.fx-vid.final .vid-end .death .d-names span, .fx-amb.final .death .d-names span { animation: nameSlam .7s .5s cubic-bezier(.2, .8, .2, 1) forwards; }
+.fx-vid.final .vid-end .death .d-names span + span, .fx-amb.final .death .d-names span + span { animation-delay: .8s; }
+.fx-vid.final .vid-end .death .d-sub, .fx-amb.final .death .d-sub { animation: dFade .9s 1.2s forwards; }
+.fx-kill .death .d-head { animation: dFade .9s 4.2s forwards; } .fx-kill .death .d-names span { animation: nameSlam .7s 4.6s cubic-bezier(.2, .8, .2, 1) forwards; } .fx-kill .death .d-sub { animation: dFade .9s 5.3s forwards; }
+.fx-exec .death .d-pre { animation: dFade .9s 4.4s forwards; } .fx-exec .death .d-names span { animation: nameSlam .7s 4.7s cubic-bezier(.2, .8, .2, 1) forwards; } .fx-exec .death .d-sub { animation: dFade .9s 5.4s forwards; }
+.vid-start { position: absolute; inset: 0; z-index: 5; pointer-events: none; background: linear-gradient(180deg, rgba(0, 0, 0, .55), rgba(0, 0, 0, .15) 45%, rgba(0, 0, 0, .55)); animation: vsOut .8s 3.6s forwards; }
+.vid-start .death .d-pre { animation: dFade .8s .3s forwards; }
+.vid-start .death .d-names span { animation: nameSlam .7s .6s cubic-bezier(.2, .8, .2, 1) forwards; }
+@keyframes vsOut { to { opacity: 0; } }
+.vid-end { background: rgba(0, 0, 0, .62); }
+.exec-line { font-size: 22px; }

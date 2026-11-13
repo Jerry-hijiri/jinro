@@ -111,11 +111,15 @@ const VIDEOS = {};
   }).catch(() => false);
   VIDEOS[n].then((ok) => { VIDEOS[n + 'Ok'] = ok; });
 });
-function playVideo(name, endHtml, fallback) {
+// 死んだ人の名前を大きく見せる
+function deathHtml(names, sub, head = '', pre = '') {
+  return `<div class="death">${head ? `<div class="d-head">${esc(head)}</div>` : ''}${pre ? `<div class="d-pre">${esc(pre)}</div>` : ''}<div class="d-names">${names.map((n) => `<span>${esc(n)}</span>`).join('')}</div><div class="d-sub">${esc(sub)}</div></div>`;
+}
+function playVideo(name, endHtml, fallback, startHtml = '') {
   // 動画が暗転したら、上から爪痕・血しぶきを重ねてから結果の文字を出す
   const p = mount('fx-vid', `<video class="fxv" src="img/video/${name}.mp4" playsinline preload="auto"></video>
     <div class="slashes"><i></i><i></i><i></i></div><div class="flashw"></div><div class="amb-blood">${splatSvg()}</div><div class="drips">${drips(16)}</div>
-    <div class="vid-end">${endHtml}</div>`, 30000);
+    ${startHtml ? `<div class="vid-start">${startHtml}</div>` : ''}<div class="vid-end">${endHtml}</div>`, 30000);
   const c = mount.last;
   const v = c.el.querySelector('video');
   sound.play(null);
@@ -144,7 +148,7 @@ const drips = (n = 14) => Array.from({ length: n }, () => `<i style="left:${(Mat
 const spray = (n = 26) => Array.from({ length: n }, () => { const a = -Math.PI * (0.08 + Math.random() * 0.84); const d = 14 + Math.random() * 46; const sz = 2 + Math.random() * 6; return `<i style="--x:${(Math.cos(a) * d).toFixed(1)}vmin;--y:${(Math.sin(a) * d * 0.9).toFixed(1)}vmin;--r:${(a * 180 / Math.PI + 90).toFixed(0)}deg;--w:${sz.toFixed(1)}px;--l:${(sz * (3 + Math.random() * 5)).toFixed(0)}px;animation-delay:${(Math.random() * .18).toFixed(2)}s"></i>`; }).join('');
 
 export function morning(day, victims) {
-  if (victims.length && gore && VIDEOS.killOk) return playVideo('kill', `<div class="center-text low"><h2>${esc(t('morningN', { n: day }))}</h2><p>${esc(t('morningDead', { names: joinNames(victims.map((v) => v.name)) }))}</p></div>`, () => { VIDEOS.killOk = false; morning(day, victims); });
+  if (victims.length && gore && VIDEOS.killOk) return playVideo('kill', deathHtml(victims.map((v) => v.name), t('killSub'), t('morningN', { n: day })), () => { VIDEOS.killOk = false; morning(day, victims); });
   if (victims.length && gore && sceneOk.alley && sceneOk.kill) return ambush(day, victims);
   if (!victims.length) {
     const p = mount('fx-morning', `<div class="dawn"></div><div class="sun"></div>${village(false)}
@@ -160,7 +164,7 @@ export function morning(day, victims) {
     <div class="kill-stage">${cards}</div>
     <div class="slashes"><i></i><i></i><i></i></div>
     <div class="splat"></div><div class="mist"></div><div class="drips">${drips()}</div><div class="vignette"></div>
-    <div class="center-text low"><h2>${esc(t('morningN', { n: day }))}</h2><p>${esc(t('morningDead', { names }))}</p></div>`, 11000);
+    ${deathHtml(victims.map((v) => v.name), t('killSub'), t('morningN', { n: day }))}`, 11000);
   const c = mount.last;
   sound.sfxPlay('heartbeat');
   c.at(1200, () => sound.sfxPlay('growl'));
@@ -219,7 +223,7 @@ function ambush(day, victims) {
     <div class="drips">${drips(16)}</div>
     <div class="amb-vig"></div>
     <div class="amb-end"><div class="scene-img" style="background-image:url(img/scenes/kill.webp)"></div>
-      <div class="center-text low"><h2>${esc(t('morningN', { n: day }))}</h2><p>${esc(t('morningDead', { names }))}</p></div></div>`, 16500);
+      ${deathHtml(victims.map((v) => v.name), t('killSub'), t('morningN', { n: day }))}</div>`, 16500);
   const c = mount.last;
   const step = (cls) => c.el.classList.add(cls);
   sound.play(null);
@@ -238,7 +242,7 @@ function ambush(day, victims) {
 }
 
 export function execution(victim, lot) {
-  if (gore && VIDEOS.execOk) return playVideo('exec', `<div class="center-text low"><p>${lot ? esc(t('lot')) + '<br>' : ''}${esc(t('executed', { name: victim.name }))}</p></div>`, () => { VIDEOS.execOk = false; execution(victim, lot); });
+  if (gore && VIDEOS.execOk) return playVideo('exec', deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : ''), () => { VIDEOS.execOk = false; execution(victim, lot); }, deathHtml([victim.name], '', '', t('execIntro')));
   const real = gore && sceneOk.guillotine_plate && sceneOk.blade;
   const ini = esc([...victim.name.replace(/^CPU\s+/, '')][0] || '?');
   const p = mount('fx-exec' + (real ? ' real' : ''), real ? `
@@ -249,13 +253,13 @@ export function execution(victim, lot) {
     </div></div>
     <div class="streak"></div><div class="flashw"></div><div class="drips">${drips(18)}</div><div class="vignette"></div>
     <div class="ecard top"><div class="av" style="--c:${victim.color}">${ini}</div><b>${esc(victim.name)}</b></div>
-    <div class="center-text low"><p>${lot ? esc(t('lot')) + '<br>' : ''}${esc(t('executed', { name: victim.name }))}</p></div>` : `
+    ${deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : '')}` : `
     <div class="dark"></div><div class="spot"></div>
     <svg class="rope" viewBox="0 0 60 300"><path d="M30 0V210"/><ellipse cx="30" cy="238" rx="17" ry="27"/><path d="M24 205h12v14H24z"/></svg>
     <div class="ecard"><div class="av" style="--c:${victim.color}">${ini}</div><b>${esc(victim.name)}</b></div>
     <div class="stamp">${esc(t('tag_exec'))}</div>
     <div class="ash"></div>
-    <div class="center-text low"><p>${lot ? esc(t('lot')) + '<br>' : ''}${esc(t('executed', { name: victim.name }))}</p></div>`, 9500);
+    ${deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : '')}`, 9500);
   const c = mount.last;
   sound.sfxPlay('drumroll');
   if (real) {
