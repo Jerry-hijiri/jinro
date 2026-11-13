@@ -474,7 +474,8 @@ function partnersHtml(priv) {
   return '';
 }
 function roleArt(r, cls = '') {
-  return `<span class="art ${cls}">${roleIcon(r, 56)}<img src="img/roles/${r}.webp" alt="" onerror="this.remove()"></span>`;
+  const px = cls === 'xs' ? 26 : cls === 'sm' ? 38 : 44;
+  return roleIcon(r, px);
 }
 function roleCardHtml(priv) {
   const r = priv.role;

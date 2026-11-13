@@ -761,3 +761,18 @@ main, .top { position: relative; z-index: 1; }
 .fx-vid.hit .drips i { animation: drip 3.4s cubic-bezier(.5, 0, .7, 1) forwards; }
 .fx-vid.hit .fxv { animation: quake .45s; }
 .fx-vid .vid-end { z-index: 5; }
+
+/* 役職の小絵（肖像画で統一） */
+.ricon.pic { position: relative; display: inline-block; flex: none; border-radius: 4px; overflow: hidden; background: #140c08; box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(150, 110, 60, .55), 0 3px 8px rgba(0, 0, 0, .6); filter: none; vertical-align: middle; }
+.ricon.pic svg { position: absolute; inset: 18%; width: 64%; height: 64%; }
+.ricon.pic img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.ricon.pic.t-wolf { box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(170, 40, 30, .7), 0 3px 8px rgba(0, 0, 0, .6); }
+.ricon.pic.t-fox { box-shadow: 0 0 0 1px #000, 0 0 0 2px rgba(200, 110, 40, .7), 0 3px 8px rgba(0, 0, 0, .6); }
+.strip { gap: 10px; }
+.strip-i { width: auto; height: auto; background: none; border: 0; border-radius: 0; }
+.strip-i .ricon.pic { width: 52px !important; height: 52px !important; }
+.re-icon .ricon.pic, .rc-icon .ricon.pic { border-radius: 6px; }
+.emblem, .wb-i { overflow: hidden; }
+.emblem .ricon.pic, .wb-i .ricon.pic { border-radius: 50%; }
+.pt-role .ricon.pic, .rr .ricon.pic, .notes .ricon.pic, .pack .ricon.pic { border-radius: 3px; }
+.art { width: auto; height: auto; background: none; box-shadow: none; }

@@ -27,7 +27,8 @@ const P = {
 export function roleIcon(role, size = 40) {
   const r = ROLES[role];
   if (!r) return '';
-  return `<svg class="ricon" width="${size}" height="${size}" viewBox="0 0 64 64" style="color:${r.color}" aria-hidden="true">${P[role]}</svg>`;
+  // 生成した肖像画の小絵（読めなければ記号にフォールバック）
+  return `<span class="ricon pic t-${r.team}" style="width:${size}px;height:${size}px"><svg viewBox="0 0 64 64" style="color:${r.color}" aria-hidden="true">${P[role]}</svg><img src="img/roles/thumb/${role}.webp" alt="" loading="lazy" onerror="this.remove()"></span>`;
 }
 
 export const PRESETS = {
