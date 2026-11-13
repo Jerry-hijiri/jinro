@@ -1,5 +1,5 @@
 // 役職の定義・おすすめ構成・有利度の目安
-export const ROLE_ORDER = ['villager', 'werewolf', 'seer', 'medium', 'knight', 'mason', 'madman', 'fox'];
+export const ROLE_ORDER = ['villager', 'werewolf', 'seer', 'medium', 'knight', 'mason', 'madman', 'fox', 'cupid'];
 
 export const ROLES = {
   villager: { team: 'village', color: '#8fb573', max: 20 },
@@ -10,6 +10,7 @@ export const ROLES = {
   mason:    { team: 'village', color: '#6aa3e0', max: 3 },
   madman:   { team: 'wolf', color: '#c46aa8', max: 2 },
   fox:      { team: 'fox', color: '#e98a3c', max: 1 },
+  cupid:    { team: 'lovers', color: '#d06a9a', max: 1 },
 };
 
 // 64x64 のシンボル（メダルの中に描く）
@@ -21,6 +22,7 @@ const P = {
   knight: '<path d="M32 6l20 7v16c0 14-9 23-20 29C21 52 12 43 12 29V13z" fill="currentColor"/><path d="M29 16h6v10h10v6H35v16h-6V32H19v-6h10z" fill="#0b0f1a" opacity=".5"/>',
   mason: '<circle cx="24" cy="32" r="13" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="40" cy="32" r="13" fill="none" stroke="currentColor" stroke-width="6" opacity=".85"/>',
   madman: '<path d="M10 16c14-6 30-6 44 0 0 20-8 36-22 40C18 52 10 36 10 16z" fill="currentColor"/><path d="M17 27c3-4 9-4 12 0-4 3-8 3-12 0zM35 27c3-4 9-4 12 0-4 3-8 3-12 0z" fill="#0b0f1a"/><path d="M20 39c8 8 16 8 24 0-4 9-20 9-24 0z" fill="#0b0f1a"/>',
+  cupid: '<path d="M32 54C14 42 8 32 8 23c0-8 6-13 12-13 5 0 9 3 12 8 3-5 7-8 12-8 6 0 12 5 12 13 0 9-6 19-24 31z" fill="currentColor"/><path d="M6 46L56 14" stroke="#f3e2c0" stroke-width="3"/><path d="M56 14l-9 1 5 6z" fill="#f3e2c0"/>',
   fox: '<path d="M9 7l15 19h16L55 7l-2 25-21 26-21-26z" fill="currentColor"/><path d="M14 30l9 4-7 3zM50 30l-9 4 7 3z" fill="#0b0f1a"/><path d="M27 48h10l-5 8z" fill="#fff" opacity=".8"/>',
 };
 
@@ -85,15 +87,17 @@ export function balance(cfgIn) {
   if (c.fox) {
     fox = Math.min(0.3, 0.1 + 0.6 / n);
   }
-  let village = (1 - wolf) * (1 - fox);
-  wolf = wolf * (1 - fox);
+  const lovers = c.cupid ? Math.min(0.25, 0.08 + 0.5 / n) : 0;
+  let village = (1 - wolf) * (1 - fox) * (1 - lovers);
+  wolf = wolf * (1 - fox) * (1 - lovers);
+  fox = fox * (1 - lovers);
   const diff = village - wolf;
   let label = 'even';
   if (diff > 0.35) label = 'strongV';
   else if (diff > 0.16) label = 'village';
   else if (diff < -0.35) label = 'strongW';
   else if (diff < -0.16) label = 'wolf';
-  return { village, wolf, fox, label };
+  return { village, wolf, fox, lovers, label };
 }
 
 export function validate(cfgIn, n) {
@@ -115,5 +119,6 @@ export function points(cfg) {
   const f = (p) => ({ win: Math.max(4, Math.round(20 * (1 - p))), lose: Math.max(1, Math.round(10 * p)) });
   const o = { village: f(b.village), wolf: f(b.wolf) };
   if (b.fox) o.fox = f(b.fox);
+  if (b.lovers) o.lovers = f(b.lovers);
   return o;
 }

@@ -112,8 +112,8 @@ const VIDEOS = {};
   VIDEOS[n].then((ok) => { VIDEOS[n + 'Ok'] = ok; });
 });
 // 死んだ人の名前を大きく見せる
-function deathHtml(names, sub, head = '', pre = '') {
-  return `<div class="death">${head ? `<div class="d-head">${esc(head)}</div>` : ''}${pre ? `<div class="d-pre">${esc(pre)}</div>` : ''}<div class="d-names">${names.map((n) => `<span>${esc(n)}</span>`).join('')}</div><div class="d-sub">${esc(sub)}</div></div>`;
+function deathHtml(names, sub, head = '', pre = '', after = '') {
+  return `<div class="death">${head ? `<div class="d-head">${esc(head)}</div>` : ''}${pre ? `<div class="d-pre">${esc(pre)}</div>` : ''}<div class="d-names">${names.map((n) => `<span>${esc(n)}</span>`).join('')}</div><div class="d-sub">${esc(sub)}</div>${after ? `<div class="d-follow">${esc(after)}</div>` : ''}</div>`;
 }
 function playVideo(name, endHtml, fallback, startHtml = '') {
   // 動画が暗転したら、上から爪痕・血しぶきを重ねてから結果の文字を出す
@@ -241,8 +241,9 @@ function ambush(day, victims) {
   return p;
 }
 
-export function execution(victim, lot) {
-  if (gore && VIDEOS.execOk) return playVideo('exec', deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : ''), () => { VIDEOS.execOk = false; execution(victim, lot); }, deathHtml([victim.name], '', '', t('execIntro')));
+export function execution(victim, lot, follow = null) {
+  const after = follow ? t('followed', { name: follow.name }) : '';
+  if (gore && VIDEOS.execOk) return playVideo('exec', deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : '', after), () => { VIDEOS.execOk = false; execution(victim, lot, follow); }, deathHtml([victim.name], '', '', t('execIntro')));
   const real = gore && sceneOk.guillotine_plate && sceneOk.blade;
   const ini = esc([...victim.name.replace(/^CPU\s+/, '')][0] || '?');
   const p = mount('fx-exec' + (real ? ' real' : ''), real ? `
@@ -253,13 +254,13 @@ export function execution(victim, lot) {
     </div></div>
     <div class="streak"></div><div class="flashw"></div><div class="drips">${drips(18)}</div><div class="vignette"></div>
     <div class="ecard top"><div class="av" style="--c:${victim.color}">${ini}</div><b>${esc(victim.name)}</b></div>
-    ${deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : '')}` : `
+    ${deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : '', after)}` : `
     <div class="dark"></div><div class="spot"></div>
     <svg class="rope" viewBox="0 0 60 300"><path d="M30 0V210"/><ellipse cx="30" cy="238" rx="17" ry="27"/><path d="M24 205h12v14H24z"/></svg>
     <div class="ecard"><div class="av" style="--c:${victim.color}">${ini}</div><b>${esc(victim.name)}</b></div>
     <div class="stamp">${esc(t('tag_exec'))}</div>
     <div class="ash"></div>
-    ${deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : '')}`, 9500);
+    ${deathHtml([victim.name], t('execSub'), '', lot ? t('lot') : '', after)}`, 9500);
   const c = mount.last;
   sound.sfxPlay('drumroll');
   if (real) {
@@ -274,15 +275,16 @@ export function execution(victim, lot) {
 }
 
 export function ending(winner) {
-  const cls = { village: 'win-v', wolf: 'win-w', fox: 'win-f' }[winner];
-  const icon = { village: 'seer', wolf: 'werewolf', fox: 'fox' }[winner];
+  const cls = { village: 'win-v', wolf: 'win-w', fox: 'win-f', lovers: 'win-l' }[winner];
+  const icon = { village: 'seer', wolf: 'werewolf', fox: 'fox', lovers: 'cupid' }[winner];
   const p = mount('fx-end ' + cls, `
     <div class="bg"></div><div class="rays"></div>${winner !== 'village' ? stars(70) : ''}
     ${winner === 'wolf' ? '<div class="moon red"><span></span></div>' + village(true) : ''}
-    ${winner === 'fox' ? '<div class="wisps"><i></i><i></i><i></i><i></i><i></i><i></i></div>' : ''}
+    ${winner === 'fox' || winner === 'lovers' ? '<div class="wisps"><i></i><i></i><i></i><i></i><i></i><i></i></div>' : ''}
     <div class="center-text"><div class="emblem">${roleIcon(winner === 'village' ? 'villager' : icon, 96)}</div><h2>${esc(t('win_title_' + winner))}</h2><p>${esc(t('win_sub_' + winner))}</p></div>`, 8000);
   if (winner === 'village') { sound.sfxPlay('fanfare'); sound.play('endVillage'); }
   else if (winner === 'wolf') { sound.sfxPlay('doom'); mount.last.at(900, () => sound.sfxPlay('howl')); sound.play('endWolf'); }
+  else if (winner === 'lovers') { sound.sfxPlay('fanfare'); sound.play('endVillage'); }
   else { sound.sfxPlay('fox'); sound.play('endWolf'); }
   return p;
 }

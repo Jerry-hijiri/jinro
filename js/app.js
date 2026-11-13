@@ -167,12 +167,12 @@ function handleAnim(pub) {
   if (a.kind === 'intro') fx.intro();
   else if (a.kind === 'night') fx.nightfall(a.day);
   else if (a.kind === 'morning') fx.morning(a.day, (a.deaths || []).map(P));
-  else if (a.kind === 'exec') fx.execution(P(a.victim), a.lot);
+  else if (a.kind === 'exec') fx.execution(P(a.victim), a.lot, a.follow ? P(a.follow) : null);
   else if (a.kind === 'end') fx.ending(a.winner);
 }
 
 function setBgm(pub) {
-  const m = { lobby: 'title', intro: 'night', role: 'night', night: 'night', morning: 'day', day: 'day', vote: 'vote', voteResult: 'vote', execution: 'vote', end: pub.winner === 'village' ? 'endVillage' : 'endWolf' };
+  const m = { lobby: 'title', intro: 'night', role: 'night', night: 'night', morning: 'day', day: 'day', vote: 'vote', voteResult: 'vote', execution: 'vote', end: pub.winner === 'village' || pub.winner === 'lovers' ? 'endVillage' : 'endWolf' };
   if (fx.busy()) return;
   sound.play(m[pub.phase] || 'title');
 }
@@ -348,11 +348,11 @@ function qrSvg(text) {
 function balanceMeter(cfg) {
   const b = balance(cfg);
   if (!b) return '';
-  const v = Math.round(b.village * 100), w = Math.round(b.wolf * 100), f = 100 - v - w;
+  const v = Math.round(b.village * 100), w = Math.round(b.wolf * 100), lo = Math.round((b.lovers || 0) * 100), f = 100 - v - w - lo;
   return `<div class="balance">
     <div class="bal-h"><span>${esc(t('balance'))}</span><b class="bal-${b.label}">${esc(t('bal_' + b.label))}</b></div>
-    <div class="bal-bar"><i class="bv" style="width:${v}%"></i>${b.fox ? `<i class="bf" style="width:${f}%"></i>` : ''}<i class="bw" style="width:${w}%"></i></div>
-    <div class="bal-legend"><span class="lv">${esc(t('villageSide'))} ${v}%</span>${b.fox ? `<span class="lf">${esc(t('foxSide'))} ${f}%</span>` : ''}<span class="lw">${esc(t('wolfSide'))} ${w}%</span></div>
+    <div class="bal-bar"><i class="bv" style="width:${v}%"></i>${b.fox ? `<i class="bf" style="width:${f}%"></i>` : ''}${lo ? `<i class="bl" style="width:${lo}%"></i>` : ''}<i class="bw" style="width:${w}%"></i></div>
+    <div class="bal-legend"><span class="lv">${esc(t('villageSide'))} ${v}%</span>${b.fox ? `<span class="lf">${esc(t('foxSide'))} ${f}%</span>` : ''}${lo ? `<span class="ll">${esc(t('loversSide'))} ${lo}%</span>` : ''}<span class="lw">${esc(t('wolfSide'))} ${w}%</span></div>
     ${ptsHtml(cfg)}
     <p class="note">${esc(t('balNote'))}</p>
   </div>`;
@@ -361,7 +361,7 @@ function ptsHtml(cfg) {
   const p = points(cfg);
   if (!p) return '';
   const row = (k, cls, label) => p[k] ? `<div class="pts ${cls}"><span>${esc(label)}</span><b>${esc(t('ptsLine', { w: p[k].win, l: p[k].lose }))}</b></div>` : '';
-  return `<div class="pts-box"><div class="pts-h">${esc(t('ptsTitle'))}</div>${row('village', 'lv', t('villageSide'))}${row('wolf', 'lw', t('wolfSide'))}${row('fox', 'lf', t('foxSide'))}</div>`;
+  return `<div class="pts-box"><div class="pts-h">${esc(t('ptsTitle'))}</div>${row('village', 'lv', t('villageSide'))}${row('wolf', 'lw', t('wolfSide'))}${row('fox', 'lf', t('foxSide'))}${row('lovers', 'll', t('loversSide'))}</div>`;
 }
 function scoreboard(pub, { reset = false } = {}) {
   if (!pub.round) return '';
@@ -483,8 +483,11 @@ function playerLobby(pub, priv) {
 function partnersHtml(priv) {
   const P = (ids) => ids.filter((id) => id !== app.client.pid).map((id) => esc(nameOf(id)));
   if (priv.role === 'werewolf') { const x = P(priv.wolves || []); return `<div class="partners"><span>${esc(t('partners_wolf'))}</span><b>${x.length ? x.join(' / ') : esc(t('noPartner'))}</b></div>`; }
-  if (priv.role === 'mason') { const x = P(priv.masons || []); return `<div class="partners"><span>${esc(t('partners_mason'))}</span><b>${x.length ? x.join(' / ') : esc(t('noPartner'))}</b></div>`; }
-  return '';
+  let h = '';
+  if (priv.role === 'mason') { const x = P(priv.masons || []); h += `<div class="partners"><span>${esc(t('partners_mason'))}</span><b>${x.length ? x.join(' / ') : esc(t('noPartner'))}</b></div>`; }
+  if (priv.role === 'cupid' && priv.lovers) h += `<div class="partners lover"><span>${esc(t('loversAre'))}</span><b>${priv.lovers.map((id) => esc(nameOf(id))).join(' ＆ ')}</b></div>`;
+  if (priv.lover) h += `<div class="partners lover"><span>${esc(t('yourLover'))}</span><b>${esc(nameOf(priv.lover))}</b></div>`;
+  return h;
 }
 function roleArt(r, cls = '') {
   const px = cls === 'xs' ? 26 : cls === 'sm' ? 38 : 44;
@@ -527,12 +530,12 @@ function myPanel(priv) {
 }
 function tag(p) {
   if (p.alive) return '';
-  return `<span class="tag ${p.death?.how}">${esc(t(p.death?.how === 'exec' ? 'tag_exec' : 'tag_night'))}</span>`;
+  return `<span class="tag ${p.death?.how}">${esc(t(p.death?.how === 'exec' ? 'tag_exec' : p.death?.how === 'love' ? 'tag_love' : 'tag_night'))}</span>`;
 }
 function grid(players, o = {}) {
   return `<div class="pgrid ${o.selectable ? 'selectable' : ''}">${players.map((p) => {
     const can = o.selectable && o.targets?.includes(p.id);
-    const sel = o.selected === p.id;
+    const sel = o.selected === p.id || (o.selectedList || []).includes(p.id);
     const role = o.roles?.[p.id];
     return `<${can ? 'button' : 'div'} class="ptok ${p.alive ? '' : 'dead'} ${sel ? 'sel' : ''} ${can ? 'can' : ''} ${o.selectable && !can ? 'dim' : ''}" ${can ? `data-act="pick" data-id="${esc(p.id)}"` : ''}>
       ${av(p, 'lg')}
@@ -576,6 +579,12 @@ function roleReveal(pub, priv) {
   </section>`;
 }
 
+function cupidPick(pub, act) {
+  const m = (app.ui.multi || []).filter((id) => act.targets.includes(id));
+  const ok = m.length === 2;
+  return `${grid(pub.players.filter((p) => p.alive), { selectable: true, targets: act.targets, selectedList: m })}
+    <div class="sticky-act"><button class="btn primary big" data-act="doAct" ${ok ? '' : 'disabled'}>${ok ? `${esc(t('decide'))}：${m.map((id) => esc(nameOf(id))).join(' ＆ ')}` : esc(t('pick2', { n: 2 - m.length }))}</button></div>`;
+}
 function nightView(pub, priv) {
   const act = priv.act;
   const pr = progress(pub);
@@ -585,15 +594,15 @@ function nightView(pub, priv) {
   if (!act) return `<section class="narrow">${head}</section>`;
   if (priv.acted) {
     return `<section class="narrow">${head}
-      <div class="card msg night-msg"><div class="zzz">☾</div><p><b>${esc(t('acted'))}</b>${priv.actTarget ? `：${esc(nameOf(priv.actTarget))}` : ''}</p><p class="waiting">${esc(t('waitDawn', pr))}</p>${pack}</div>
+      <div class="card msg night-msg"><div class="zzz">☾</div><p><b>${esc(t('acted'))}</b>${priv.actTarget ? `：${esc([].concat(priv.actTarget).map(nameOf).join(' ＆ '))}` : ''}</p><p class="waiting">${esc(t('waitDawn', pr))}</p>${pack}</div>
       ${myPanel(priv)}</section>`;
   }
   const prompt = t('act_' + act.kind);
   const players = pub.players.filter((p) => p.alive || act.targets.includes(p.id));
   return `<section class="narrow">${head}
-    <div class="card prompt-card"><p class="prompt">${esc(prompt)}</p>${act.kind === 'suspect' ? `<p class="note">${esc(t('act_suspectNote'))}</p>` : ''}${pack}</div>
-    ${grid(players.filter((p) => p.alive), { selectable: true, targets: act.targets, selected: app.ui.sel })}
-    <div class="sticky-act"><button class="btn primary big" data-act="doAct" ${app.ui.sel && act.targets.includes(app.ui.sel) ? '' : 'disabled'}>${esc(t('decide'))}${app.ui.sel ? `：${esc(nameOf(app.ui.sel))}` : ''}</button></div>
+    <div class="card prompt-card"><p class="prompt">${esc(prompt)}</p>${act.kind === 'suspect' ? `<p class="note">${esc(t('act_suspectNote'))}</p>` : act.kind === 'cupid' ? `<p class="note">${esc(t('act_cupidNote'))}</p>` : ''}${pack}</div>
+    ${act.kind === 'cupid' ? cupidPick(pub, act) : `${grid(players.filter((p) => p.alive), { selectable: true, targets: act.targets, selected: app.ui.sel })}
+    <div class="sticky-act"><button class="btn primary big" data-act="doAct" ${app.ui.sel && act.targets.includes(app.ui.sel) ? '' : 'disabled'}>${esc(t('decide'))}${app.ui.sel ? `：${esc(nameOf(app.ui.sel))}` : ''}</button></div>`}
     ${myPanel(priv)}
   </section>`;
 }
@@ -681,7 +690,7 @@ function spectator(pub, priv) {
 function timelineHtml(pub) {
   const rows = (pub.history || []).map((h) => {
     if (h.kind === 'night') return `<li><span class="d">${esc(t('nightN', { n: h.day }))}</span>${h.deaths.length ? `${esc(t('tag_night'))}：${esc(joinNames(h.deaths.map(nameOf)))}` : esc(t('morningPeace'))}</li>`;
-    return `<li><span class="d">${esc(t('dayN', { n: h.day }))}</span>${h.victim ? `${esc(t('tag_exec'))}：${esc(nameOf(h.victim))}${h.lot ? ' 🎲' : ''}` : esc(t('noExec'))}</li>`;
+    return `<li><span class="d">${esc(t('dayN', { n: h.day }))}</span>${h.victim ? `${esc(t('tag_exec'))}：${esc(nameOf(h.victim))}${h.lot ? ' 🎲' : ''}${h.follow ? `（${esc(t('followed', { name: nameOf(h.follow) }))}）` : ''}` : esc(t('noExec'))}</li>`;
   }).join('');
   return rows ? `<div class="card"><h3>${esc(t('timeline'))}</h3><ul class="timeline">${rows}</ul></div>` : '';
 }
@@ -689,14 +698,15 @@ function timelineHtml(pub) {
 function endView(pub, priv) {
   const w = pub.winner;
   const roles = pub.reveal || {};
-  const wins = (r) => (w === 'fox' ? r === 'fox' : ROLES[r]?.team === w);
+  const L = pub.lovers || [];
+  const wins = (r, id) => (w === 'lovers' ? (L.includes(id) || r === 'cupid') : w === 'fox' ? r === 'fox' : ROLES[r]?.team === w);
   const rows = pub.players.map((p) => {
     const r = roles[p.id];
-    return `<li class="${wins(r) ? 'win' : ''} ${p.alive ? '' : 'dead'}">${av(p)}<b class="pn">${esc(p.name)}</b><span class="rr">${roleArt(r, 'xs')}${esc(roleName(r))}</span>${tag(p)}${wins(r) ? `<span class="wm">${esc(t('winnerMark'))}</span>` : ''}</li>`;
+    return `<li class="${wins(r, p.id) ? 'win' : ''} ${p.alive ? '' : 'dead'}">${av(p)}<b class="pn">${esc(p.name)}</b><span class="rr">${roleArt(r, 'xs')}${esc(roleName(r))}</span>${L.includes(p.id) ? `<span class="lv-mark">${esc(t('loversAre'))}</span>` : ''}${tag(p)}${wins(r, p.id) ? `<span class="wm">${esc(t('winnerMark'))}</span>` : ''}</li>`;
   }).join('');
   const isHost = app.view === 'host' || priv?.owner;
   return `<section class="narrow">
-    <div class="win-banner w-${w}"><div class="wb-i">${roleIcon(w === 'village' ? 'villager' : w === 'wolf' ? 'werewolf' : 'fox', 64)}</div><h2>${esc(t('win_title_' + w))}</h2><p>${esc(t('win_sub_' + w))}</p></div>
+    <div class="win-banner w-${w}"><div class="wb-i">${roleIcon({ village: 'villager', wolf: 'werewolf', fox: 'fox', lovers: 'cupid' }[w], 64)}</div><h2>${esc(t('win_title_' + w))}</h2><p>${esc(t('win_sub_' + w))}</p></div>
     ${scoreboard(pub)}
     <div class="card"><h3>${esc(t('allRoles'))}</h3><ul class="reveal">${rows}</ul></div>
     ${timelineHtml(pub)}
@@ -878,8 +888,18 @@ const actions = {
     setTimeout(() => actions.home(), 300);
   },
   ready() { if (!app.ui.seen) return; app.client.send({ t: 'ready' }); sound.sfxPlay('confirm'); },
-  pick(el) { app.ui.sel = el.dataset.id; sound.sfxPlay('select'); render(); },
-  doAct() { if (!app.ui.sel) return; app.client.send({ t: 'act', target: app.ui.sel }); sound.sfxPlay('confirm'); },
+  pick(el) {
+    if (app.client.priv?.act?.kind === 'cupid' && app.client.pub?.phase === 'night') {
+      const m = app.ui.multi || (app.ui.multi = []);
+      const id = el.dataset.id; const i = m.indexOf(id);
+      if (i >= 0) m.splice(i, 1); else { if (m.length >= 2) m.shift(); m.push(id); }
+    } else app.ui.sel = el.dataset.id;
+    sound.sfxPlay('select'); render();
+  },
+  doAct() {
+    if (app.client.priv?.act?.kind === 'cupid') { if ((app.ui.multi || []).length !== 2) return; app.client.send({ t: 'act', targets: app.ui.multi }); app.ui.multi = []; sound.sfxPlay('confirm'); return; }
+    if (!app.ui.sel) return; app.client.send({ t: 'act', target: app.ui.sel }); sound.sfxPlay('confirm');
+  },
   doVote() { if (!app.ui.sel) return; app.client.send({ t: 'vote', target: app.ui.sel }); sound.sfxPlay('confirm'); },
   skip() { app.client.send({ t: 'skip' }); sound.sfxPlay('click'); },
   panel() { app.ui.panel = !app.ui.panel; render(); },

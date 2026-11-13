@@ -117,8 +117,14 @@ export class Engine {
         if (s.phase !== 'night' || !p || !p.alive || pid in s.acts) return;
         if (Date.now() - s.nightStart < 1500) return;
         const a = this.actFor(p);
-        if (!a.targets.includes(msg.target)) return;
-        s.acts[pid] = msg.target;
+        if (a.kind === 'cupid') {
+          const tg = Array.isArray(msg.targets) ? [...new Set(msg.targets)] : [];
+          if (tg.length !== 2 || !tg.every((x) => a.targets.includes(x))) return;
+          s.acts[pid] = tg;
+        } else {
+          if (!a.targets.includes(msg.target)) return;
+          s.acts[pid] = msg.target;
+        }
         if (this.alive().every((x) => x.id in s.acts)) { this.resolveNight(); return; }
         break;
       }
@@ -183,6 +189,7 @@ export class Engine {
           if (this.s.phase !== 'night') return;
           const a = this.actFor(b);
           if (!a.targets.length) return;
+          if (a.kind === 'cupid') { const sh = shuffle([...a.targets]); this.handle(b.id, { t: 'act', targets: sh.slice(0, 2) }); return; }
           let tg = pick(a.targets);
           if (r[b.id] === 'werewolf') {
             const mate = Object.entries(this.s.acts).find(([w, x]) => w !== b.id && r[w] === 'werewolf' && x);
@@ -249,7 +256,7 @@ export class Engine {
     s.players.forEach((p) => { p.alive = true; p.death = null; });
     Object.assign(s, {
       day: 0, acts: {}, votes: {}, candidates: null, runoffDone: false, lastGuard: null,
-      seerLog: {}, mediumLog: [], medPending: null, history: [], winner: null,
+      seerLog: {}, mediumLog: [], medPending: null, history: [], winner: null, lovers: null,
       ready: [], skip: [], voteResult: null, phase: 'intro',
     });
     s.pts = points(s.cfg);
@@ -266,7 +273,7 @@ export class Engine {
     Object.assign(s, {
       phase: 'lobby', day: 0, roles: {}, acts: {}, votes: {}, candidates: null, runoffDone: false,
       lastGuard: null, seerLog: {}, mediumLog: [], medPending: null, winner: null, ready: [], skip: [],
-      voteResult: null, endsAt: null, next: null, anim: null, history: [],
+      voteResult: null, endsAt: null, next: null, anim: null, history: [], lovers: null,
     });
     this.commit();
   }
@@ -286,7 +293,7 @@ export class Engine {
     const prevRank = this.ranks(ids, before);
     const deltas = {};
     for (const id of ids) {
-      const team = ROLES[s.roles[id]]?.team;
+      const team = s.lovers?.includes(id) ? 'lovers' : ROLES[s.roles[id]]?.team;
       if (!team || !pts?.[team]) { deltas[id] = 0; continue; }
       const won = team === win;
       const after = Math.max(0, before[id] + (won ? pts[team].win : -pts[team].lose));
@@ -349,6 +356,7 @@ export class Engine {
     const role = s.roles[p.id];
     const others = this.alive().filter((x) => x.id !== p.id).map((x) => x.id);
     if (role === 'werewolf') return { kind: s.day === 1 ? 'wolfFirst' : 'kill', targets: others.filter((id) => s.roles[id] !== 'werewolf') };
+    if (role === 'cupid' && s.day === 1) return { kind: 'cupid', targets: this.alive().map((x) => x.id) };
     if (role === 'seer') return { kind: 'divine', targets: others };
     if (role === 'knight' && s.day > 1) return { kind: 'guard', targets: others.filter((id) => s.settings.guardTwice || id !== s.lastGuard) };
     return { kind: 'suspect', targets: others };
@@ -408,7 +416,16 @@ export class Engine {
       }
       if (target && target !== guard && r[target] !== 'fox' && !deaths.includes(target)) deaths.unshift(target);
     }
+    // キューピッド（初日の夜に恋人を決める）
+    if (n === 1 && !s.lovers) {
+      for (const p of al) if (r[p.id] === 'cupid' && Array.isArray(s.acts[p.id])) s.lovers = s.acts[p.id];
+    }
     for (const id of deaths) { const p = this.P(id); p.alive = false; p.death = { day: n, how: 'night' }; }
+    // 恋人の後追い
+    for (const id of [...deaths]) {
+      const mate = this.loverOf(id);
+      if (mate && this.P(mate)?.alive) { const q = this.P(mate); q.alive = false; q.death = { day: n, how: 'love' }; deaths.push(mate); }
+    }
     shuffle(deaths);
     s.history.push({ day: n, kind: 'night', deaths: [...deaths] });
     s.phase = 'morning';
@@ -483,9 +500,12 @@ export class Engine {
     p.alive = false;
     p.death = { day: s.day, how: 'exec' };
     s.medPending = { day: s.day, target: victim, res: s.roles[victim] === 'werewolf' ? 'wolf' : 'human' };
-    s.history.push({ day: s.day, kind: 'exec', victim, lot: vr.lot });
+    let follow = null;
+    const mate = this.loverOf(victim);
+    if (mate && this.P(mate)?.alive) { const q = this.P(mate); q.alive = false; q.death = { day: s.day, how: 'love' }; follow = mate; }
+    s.history.push({ day: s.day, kind: 'exec', victim, lot: vr.lot, follow });
     s.phase = 'execution';
-    this.anim('exec', { victim, lot: vr.lot });
+    this.anim('exec', { victim, lot: vr.lot, follow });
     this.arm(T.exec, 'afterExec');
     this.commit();
   }
@@ -493,6 +513,12 @@ export class Engine {
   afterExec() {
     if (this.checkWin()) return;
     this.startNight(this.s.day + 1);
+  }
+
+  loverOf(id) {
+    const L = this.s.lovers;
+    if (!L || !L.includes(id)) return null;
+    return L[0] === id ? L[1] : L[0];
   }
 
   checkWin() {
@@ -504,6 +530,7 @@ export class Engine {
     if (w === 0) win = 'village';
     else if (w >= others) win = 'wolf';
     if (win && al.some((p) => s.roles[p.id] === 'fox')) win = 'fox';
+    if (win && s.lovers && s.lovers.every((id) => this.P(id)?.alive)) win = 'lovers';
     if (!win) return false;
     this.clearTimer();
     s.winner = win;
@@ -528,7 +555,7 @@ export class Engine {
       sentAt: Date.now(), endsIn: s.endsAt ? Math.max(0, s.endsAt - Date.now()) : null,
       players: s.players.map((p) => ({ id: p.id, name: p.name, alive: p.alive, host: !!p.host, owner: !!p.owner, bot: !!p.bot, death: p.death, done: done(p) })),
       cfg: s.cfg, cfgAuto: s.cfgAuto, settings: s.settings, candidates: s.candidates, voteResult: vr,
-      skip: s.skip.length, winner: s.winner, reveal: ph === 'end' ? s.roles : null, history: s.history,
+      skip: s.skip.length, winner: s.winner, reveal: ph === 'end' ? s.roles : null, lovers: ph === 'end' ? s.lovers : null, history: s.history,
       scores: Object.fromEntries(s.players.map((p) => [p.id, s.scores[p.id] || 0])), round: s.round, lastResult: s.lastResult, pts: ph === 'lobby' ? points(s.cfg) : s.pts,
     };
   }
@@ -546,6 +573,8 @@ export class Engine {
       if (s.phase === 'night') o.packPicks = Object.fromEntries(o.wolves.map((w) => [w, s.acts[w] ?? null]));
     }
     if (role === 'mason') o.masons = ids('mason');
+    if (s.lovers?.includes(pid)) o.lover = this.loverOf(pid);
+    if (role === 'cupid' && s.lovers) o.lovers = s.lovers;
     if (role === 'seer') o.seerLog = s.seerLog[pid] || [];
     if (role === 'medium') o.mediumLog = s.mediumLog;
     if (s.phase === 'role') o.ready = s.ready.includes(pid);
@@ -553,6 +582,7 @@ export class Engine {
     if (s.phase === 'vote' && p.alive) { o.voteTargets = this.voteTargets(pid); o.voted = s.votes[pid] ?? null; }
     if (s.phase === 'day') o.skipped = s.skip.includes(pid);
     if (!p.alive && s.settings.deadSee) o.allRoles = s.roles;
+    if (!p.alive && s.settings.deadSee) o.allLovers = s.lovers;
     return o;
   }
 

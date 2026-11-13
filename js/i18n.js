@@ -55,7 +55,7 @@ const D = {
     ],
     tips: ['自分の画面を他の人に見せないこと', '死んだ人は話さず、表情でも伝えないこと', 'スマホの音を出すと臨場感アップ（オーナーのPCをスピーカーにつなぐのがおすすめ）'],
     tipsTitle: 'コツと約束',
-    addCpu: 'CPUを追加', ageTitle: 'この先、18歳未満お断り', ageBody: 'このゲームには流血・残酷な描写と大きな音が含まれます。あなたは18歳以上ですか？', ageYes: '18歳以上です', ageNo: 'いいえ（残酷な描写なしで遊ぶ）', optGore: '残酷な演出', ownerPhoneTitle: 'オーナーはスマホで参加', ownerPhoneNote: 'このPCは全員で見る盤面になります。「オーナー用QR」を自分のスマホで読み取って参加すると、スマホからも開始・進行の操作ができます（他の人には見せないでください）。', showOwnerQr: 'オーナー用QRを表示', hideOwnerQr: 'QRを隠す', joinOnThisPc: 'このPCで参加する', fullscreen: '全画面', a2hsBody: 'iPhoneのSafariはこのボタンで全画面にできません。ホーム画面に追加すると、アドレスバーなしの全画面で開けます。', a2hs1: '画面下の共有ボタン（□に↑）を押す', a2hs2: '「ホーム画面に追加」を選ぶ', a2hs3: 'ホーム画面の「月夜の人狼」から開いて参加する（名前を入れる前に追加してください。追加後はSafariとは別の画面になります）', execIntro: '処刑されるのは', execSub: 'が処刑されました', killSub: 'が無残な姿で発見されました', scoreboard: 'スコア順位', roundN: '{n}戦終了', pt: '{n}点', ptsLine: '勝ち +{w} / 負け −{l}', ptsTitle: '今回の点数', resetScores: 'スコアをリセット', resetConfirm: '全員のスコアを0に戻しますか？', scoreNote: '勝ちにくい側ほど、勝ったときの点が高くなります。0点より下にはなりません。',
+    addCpu: 'CPUを追加', ageTitle: 'この先、18歳未満お断り', ageBody: 'このゲームには流血・残酷な描写と大きな音が含まれます。あなたは18歳以上ですか？', ageYes: '18歳以上です', ageNo: 'いいえ（残酷な描写なしで遊ぶ）', optGore: '残酷な演出', ownerPhoneTitle: 'オーナーはスマホで参加', ownerPhoneNote: 'このPCは全員で見る盤面になります。「オーナー用QR」を自分のスマホで読み取って参加すると、スマホからも開始・進行の操作ができます（他の人には見せないでください）。', showOwnerQr: 'オーナー用QRを表示', hideOwnerQr: 'QRを隠す', joinOnThisPc: 'このPCで参加する', fullscreen: '全画面', a2hsBody: 'iPhoneのSafariはこのボタンで全画面にできません。ホーム画面に追加すると、アドレスバーなしの全画面で開けます。', a2hs1: '画面下の共有ボタン（□に↑）を押す', a2hs2: '「ホーム画面に追加」を選ぶ', a2hs3: 'ホーム画面の「月夜の人狼」から開いて参加する（名前を入れる前に追加してください。追加後はSafariとは別の画面になります）', execIntro: '処刑されるのは', execSub: 'が処刑されました', killSub: 'が無残な姿で発見されました', team_lovers: '恋人陣営', win_lovers: '恋人が2人とも最後まで生き残れば勝ち', act_cupid: '恋人にする2人を選んでください（自分も選べます）', act_cupidNote: '選んだ2人は、片方が死ぬともう片方も後を追います。', yourLover: 'あなたの恋人', loversAre: '恋人', tag_love: '後追い', followed: '恋人の {name} が後を追った', win_title_lovers: '恋人たちの勝利', win_sub_lovers: '二人の愛は、村も狼も越えた。', loversSide: '恋人', pick2: 'あと{n}人選んでください', scoreboard: 'スコア順位', roundN: '{n}戦終了', pt: '{n}点', ptsLine: '勝ち +{w} / 負け −{l}', ptsTitle: '今回の点数', resetScores: 'スコアをリセット', resetConfirm: '全員のスコアを0に戻しますか？', scoreNote: '勝ちにくい側ほど、勝ったときの点が高くなります。0点より下にはなりません。',
     rolesInGame: 'このゲームの役職', ability: '能力',
     roles: {
       villager: ['村人', '特別な力はないが、議論と投票で人狼を追い詰める。', '能力なし。夜は「怪しい人」を選ぶだけ（役職を隠すため）。'],
@@ -66,6 +66,7 @@ const D = {
       mason: ['共有者', '互いに市民だと分かっている2人組。', 'もう一人の共有者が誰か分かる。確実に信頼できる味方。'],
       madman: ['狂人', '人間だが人狼の味方。嘘で村を混乱させる。', '能力なし。占われても「人間」と出る。人狼が誰かは分からない。人狼陣営が勝てば勝ち。'],
       fox: ['妖狐', '第三陣営。最後まで生き残れば一人勝ち。', '人狼に襲われても死なない。占われると死ぬ。終了時に生きていれば勝利を奪う。'],
+      cupid: ['キューピッド', '2人を恋人にする。恋人が最後まで生き残れば恋人陣営の勝ち。', '最初の夜に2人を選んで恋人にする（自分も選べる）。恋人の片方が死ぬと、もう片方も後を追う。恋人が2人とも最後まで生きていれば、どの陣営にも勝つ。'],
     },
   },
   en: {
@@ -119,7 +120,7 @@ const D = {
     ],
     tips: ['Never show your screen to others', 'Dead players stay silent — no hints, not even with your face', 'Turn sound on for atmosphere (hook the host’s PC up to a speaker)'],
     tipsTitle: 'Tips & etiquette',
-    addCpu: 'Add CPU', ageTitle: 'Adults only (18+)', ageBody: 'This game contains blood, graphic violence and loud sounds. Are you 18 or older?', ageYes: 'I am 18 or older', ageNo: 'No (play without graphic scenes)', optGore: 'Graphic scenes', ownerPhoneTitle: 'Host plays on their phone', ownerPhoneNote: 'This PC becomes the shared board. Scan the Host QR with your own phone to join and run the game from your phone (don’t show it to others).', showOwnerQr: 'Show Host QR', hideOwnerQr: 'Hide QR', joinOnThisPc: 'Play on this PC instead', fullscreen: 'Full screen', a2hsBody: 'Safari on iPhone cannot go full screen with this button. Add the game to your Home Screen to open it full screen without the address bar.', a2hs1: 'Tap the Share button (square with an arrow)', a2hs2: 'Choose “Add to Home Screen”', a2hs3: 'Open “Moonlit Werewolf” from your Home Screen and join there (add it before entering your name — it runs separately from Safari)', execIntro: 'The condemned', execSub: 'has been executed', killSub: 'was found dead last night', scoreboard: 'Leaderboard', roundN: 'After game {n}', pt: '{n} pts', ptsLine: 'Win +{w} / Lose −{l}', ptsTitle: 'Points this game', resetScores: 'Reset scores', resetConfirm: 'Reset everyone’s score to 0?', scoreNote: 'The worse your side’s odds, the more a win is worth. Scores never go below 0.',
+    addCpu: 'Add CPU', ageTitle: 'Adults only (18+)', ageBody: 'This game contains blood, graphic violence and loud sounds. Are you 18 or older?', ageYes: 'I am 18 or older', ageNo: 'No (play without graphic scenes)', optGore: 'Graphic scenes', ownerPhoneTitle: 'Host plays on their phone', ownerPhoneNote: 'This PC becomes the shared board. Scan the Host QR with your own phone to join and run the game from your phone (don’t show it to others).', showOwnerQr: 'Show Host QR', hideOwnerQr: 'Hide QR', joinOnThisPc: 'Play on this PC instead', fullscreen: 'Full screen', a2hsBody: 'Safari on iPhone cannot go full screen with this button. Add the game to your Home Screen to open it full screen without the address bar.', a2hs1: 'Tap the Share button (square with an arrow)', a2hs2: 'Choose “Add to Home Screen”', a2hs3: 'Open “Moonlit Werewolf” from your Home Screen and join there (add it before entering your name — it runs separately from Safari)', execIntro: 'The condemned', execSub: 'has been executed', killSub: 'was found dead last night', team_lovers: 'Lovers', win_lovers: 'Win if both lovers survive to the end', act_cupid: 'Choose two players to become lovers (you can include yourself)', act_cupidNote: 'If one of them dies, the other follows.', yourLover: 'Your lover', loversAre: 'Lovers', tag_love: 'Grief', followed: 'Their lover {name} followed them in death', win_title_lovers: 'The Lovers Win', win_sub_lovers: 'Their love outlasted both village and wolves.', loversSide: 'Lovers', pick2: 'Pick {n} more', scoreboard: 'Leaderboard', roundN: 'After game {n}', pt: '{n} pts', ptsLine: 'Win +{w} / Lose −{l}', ptsTitle: 'Points this game', resetScores: 'Reset scores', resetConfirm: 'Reset everyone’s score to 0?', scoreNote: 'The worse your side’s odds, the more a win is worth. Scores never go below 0.',
     rolesInGame: 'Roles in this game', ability: 'Ability',
     roles: {
       villager: ['Villager', 'No special power. Hunt the wolves through discussion and votes.', 'None. At night you just pick a suspect (to keep roles hidden).'],
@@ -130,6 +131,7 @@ const D = {
       mason: ['Mason', 'A pair who know each other are villagers.', 'You know who the other Mason is — a guaranteed ally.'],
       madman: ['Madman', 'A human who sides with the wolves. Sow chaos with lies.', 'No power. Shows as Human to the Seer. Doesn’t know the wolves. Wins if the wolves win.'],
       fox: ['Fox', 'A third party. Survive to the end to win alone.', 'Immune to wolf attacks, but dies if divined. Alive at the end? Steals the victory.'],
+      cupid: ['Cupid', 'Binds two players as lovers. If the lovers survive to the end, they win.', 'On the first night, pick two players to become lovers (you may pick yourself). If one lover dies, the other dies of grief. If both are alive at the end, they beat every other team.'],
     },
   },
   ko: {
@@ -183,7 +185,7 @@ const D = {
     ],
     tips: ['자기 화면을 다른 사람에게 보여 주지 않기', '죽은 사람은 말하지 않고, 표정으로도 알리지 않기', '소리를 켜면 몰입감 UP (호스트 PC를 스피커에 연결 추천)'],
     tipsTitle: '요령과 약속',
-    addCpu: 'CPU 추가', ageTitle: '18세 미만 이용 불가', ageBody: '이 게임에는 유혈·잔혹한 묘사와 큰 소리가 포함되어 있습니다. 18세 이상입니까?', ageYes: '18세 이상입니다', ageNo: '아니요 (잔혹한 연출 없이 플레이)', optGore: '잔혹한 연출', ownerPhoneTitle: '호스트는 휴대폰으로 참가', ownerPhoneNote: '이 PC는 모두가 보는 보드가 됩니다. 「호스트용 QR」을 자신의 휴대폰으로 스캔해 참가하면 휴대폰에서 시작·진행 조작도 할 수 있어요(다른 사람에게 보여 주지 마세요).', showOwnerQr: '호스트용 QR 표시', hideOwnerQr: 'QR 숨기기', joinOnThisPc: '이 PC에서 참가', fullscreen: '전체 화면', a2hsBody: 'iPhone의 Safari는 이 버튼으로 전체 화면을 쓸 수 없어요. 홈 화면에 추가하면 주소창 없이 전체 화면으로 열 수 있어요.', a2hs1: '아래의 공유 버튼(□에 ↑)을 누르기', a2hs2: '「홈 화면에 추가」 선택', a2hs3: '홈 화면의 아이콘으로 열어서 참가하기 (이름을 입력하기 전에 추가하세요. Safari와는 별도로 동작해요)', execIntro: '처형될 사람은', execSub: '처형되었습니다', killSub: '처참한 모습으로 발견되었습니다', scoreboard: '점수 순위', roundN: '{n}게임 종료', pt: '{n}점', ptsLine: '승리 +{w} / 패배 −{l}', ptsTitle: '이번 게임 점수', resetScores: '점수 초기화', resetConfirm: '모두의 점수를 0으로 되돌릴까요?', scoreNote: '이기기 어려운 쪽일수록 이겼을 때 점수가 높아요. 0점 아래로는 내려가지 않아요.',
+    addCpu: 'CPU 추가', ageTitle: '18세 미만 이용 불가', ageBody: '이 게임에는 유혈·잔혹한 묘사와 큰 소리가 포함되어 있습니다. 18세 이상입니까?', ageYes: '18세 이상입니다', ageNo: '아니요 (잔혹한 연출 없이 플레이)', optGore: '잔혹한 연출', ownerPhoneTitle: '호스트는 휴대폰으로 참가', ownerPhoneNote: '이 PC는 모두가 보는 보드가 됩니다. 「호스트용 QR」을 자신의 휴대폰으로 스캔해 참가하면 휴대폰에서 시작·진행 조작도 할 수 있어요(다른 사람에게 보여 주지 마세요).', showOwnerQr: '호스트용 QR 표시', hideOwnerQr: 'QR 숨기기', joinOnThisPc: '이 PC에서 참가', fullscreen: '전체 화면', a2hsBody: 'iPhone의 Safari는 이 버튼으로 전체 화면을 쓸 수 없어요. 홈 화면에 추가하면 주소창 없이 전체 화면으로 열 수 있어요.', a2hs1: '아래의 공유 버튼(□에 ↑)을 누르기', a2hs2: '「홈 화면에 추가」 선택', a2hs3: '홈 화면의 아이콘으로 열어서 참가하기 (이름을 입력하기 전에 추가하세요. Safari와는 별도로 동작해요)', execIntro: '처형될 사람은', execSub: '처형되었습니다', killSub: '처참한 모습으로 발견되었습니다', team_lovers: '연인 진영', win_lovers: '두 연인이 끝까지 살아남으면 승리', act_cupid: '연인으로 만들 두 사람을 고르세요 (자신도 가능)', act_cupidNote: '한쪽이 죽으면 다른 쪽도 뒤따라 죽습니다.', yourLover: '당신의 연인', loversAre: '연인', tag_love: '뒤따름', followed: '연인 {name}이(가) 뒤따라 죽었다', win_title_lovers: '연인들의 승리', win_sub_lovers: '두 사람의 사랑은 마을도 늑대도 넘어섰다.', loversSide: '연인', pick2: '{n}명 더 고르세요', scoreboard: '점수 순위', roundN: '{n}게임 종료', pt: '{n}점', ptsLine: '승리 +{w} / 패배 −{l}', ptsTitle: '이번 게임 점수', resetScores: '점수 초기화', resetConfirm: '모두의 점수를 0으로 되돌릴까요?', scoreNote: '이기기 어려운 쪽일수록 이겼을 때 점수가 높아요. 0점 아래로는 내려가지 않아요.',
     rolesInGame: '이번 게임의 직업', ability: '능력',
     roles: {
       villager: ['시민', '특별한 능력은 없지만 토론과 투표로 늑대인간을 몰아낸다.', '능력 없음. 밤에는 의심되는 사람을 고르기만 한다(직업을 숨기기 위해).'],
@@ -194,6 +196,7 @@ const D = {
       mason: ['공유자', '서로가 시민임을 아는 2인조.', '다른 공유자가 누구인지 안다. 확실히 믿을 수 있는 아군.'],
       madman: ['광인', '인간이지만 늑대인간 편. 거짓말로 마을을 혼란시킨다.', '능력 없음. 점쳐도 "인간"으로 나온다. 늑대인간이 누군지 모른다. 늑대 진영이 이기면 승리.'],
       fox: ['요호', '제3진영. 끝까지 살아남으면 단독 승리.', '늑대인간의 습격으로 죽지 않는다. 점쳐지면 죽는다. 끝까지 살아 있으면 승리를 빼앗는다.'],
+      cupid: ['큐피드', '두 사람을 연인으로 만든다. 연인이 끝까지 살아남으면 연인 진영 승리.', '첫날 밤 두 사람을 골라 연인으로 만든다(자신도 가능). 한쪽이 죽으면 다른 쪽도 뒤따라 죽는다. 두 연인이 끝까지 살아 있으면 모든 진영을 이긴다.'],
     },
   },
   zh: {
@@ -247,7 +250,7 @@ const D = {
     ],
     tips: ['不要把自己的屏幕给别人看', '死亡的玩家不要说话，也不要用表情暗示', '打开声音更有氛围（推荐把房主电脑接上音箱）'],
     tipsTitle: '技巧与约定',
-    addCpu: '添加电脑玩家', ageTitle: '未满18岁禁止', ageBody: '本游戏包含流血、残酷画面及巨大声响。你已年满18岁吗？', ageYes: '我已年满18岁', ageNo: '否（不显示残酷画面）', optGore: '残酷画面', ownerPhoneTitle: '房主用手机参与', ownerPhoneNote: '这台电脑将作为大家共看的面板。用自己的手机扫描「房主专用二维码」加入，即可在手机上开始和推进游戏（请勿给他人看）。', showOwnerQr: '显示房主专用二维码', hideOwnerQr: '隐藏二维码', joinOnThisPc: '在这台电脑上参与', fullscreen: '全屏', a2hsBody: 'iPhone 的 Safari 无法用此按钮全屏。添加到主屏幕后，可以无地址栏全屏打开。', a2hs1: '点击下方的分享按钮（方框加箭头）', a2hs2: '选择「添加到主屏幕」', a2hs3: '从主屏幕的图标打开并加入（请在输入名字之前添加，它与 Safari 分开运行）', execIntro: '即将被处决的是', execSub: '被处决了', killSub: '昨晚被发现惨死', scoreboard: '积分排名', roundN: '第{n}局结束', pt: '{n}分', ptsLine: '胜 +{w} / 负 −{l}', ptsTitle: '本局分数', resetScores: '重置积分', resetConfirm: '将所有人的积分归零？', scoreNote: '越不被看好的一方，获胜得分越高。积分不会低于0。',
+    addCpu: '添加电脑玩家', ageTitle: '未满18岁禁止', ageBody: '本游戏包含流血、残酷画面及巨大声响。你已年满18岁吗？', ageYes: '我已年满18岁', ageNo: '否（不显示残酷画面）', optGore: '残酷画面', ownerPhoneTitle: '房主用手机参与', ownerPhoneNote: '这台电脑将作为大家共看的面板。用自己的手机扫描「房主专用二维码」加入，即可在手机上开始和推进游戏（请勿给他人看）。', showOwnerQr: '显示房主专用二维码', hideOwnerQr: '隐藏二维码', joinOnThisPc: '在这台电脑上参与', fullscreen: '全屏', a2hsBody: 'iPhone 的 Safari 无法用此按钮全屏。添加到主屏幕后，可以无地址栏全屏打开。', a2hs1: '点击下方的分享按钮（方框加箭头）', a2hs2: '选择「添加到主屏幕」', a2hs3: '从主屏幕的图标打开并加入（请在输入名字之前添加，它与 Safari 分开运行）', execIntro: '即将被处决的是', execSub: '被处决了', killSub: '昨晚被发现惨死', team_lovers: '恋人阵营', win_lovers: '两名恋人都活到最后即获胜', act_cupid: '选择两人成为恋人（可包含自己）', act_cupidNote: '其中一人死亡，另一人也会殉情。', yourLover: '你的恋人', loversAre: '恋人', tag_love: '殉情', followed: '恋人 {name} 殉情了', win_title_lovers: '恋人获胜', win_sub_lovers: '两人的爱超越了村庄与狼。', loversSide: '恋人', pick2: '还需选择{n}人', scoreboard: '积分排名', roundN: '第{n}局结束', pt: '{n}分', ptsLine: '胜 +{w} / 负 −{l}', ptsTitle: '本局分数', resetScores: '重置积分', resetConfirm: '将所有人的积分归零？', scoreNote: '越不被看好的一方，获胜得分越高。积分不会低于0。',
     rolesInGame: '本局角色', ability: '能力',
     roles: {
       villager: ['村民', '没有特殊能力，靠讨论和投票揪出狼人。', '无能力。夜晚只需选择一个可疑的人（用于隐藏身份）。'],
@@ -258,6 +261,7 @@ const D = {
       mason: ['共有者', '彼此知道对方是好人的二人组。', '知道另一位共有者是谁，绝对可信的伙伴。'],
       madman: ['狂人', '是人类却站在狼人一边，用谎言扰乱村庄。', '无能力。被查验显示为“好人”。不知道狼人是谁。狼人阵营获胜即胜利。'],
       fox: ['妖狐', '第三方阵营，活到最后即独赢。', '不会被狼人杀死，但被查验会死。结束时若存活，则夺走胜利。'],
+      cupid: ['丘比特', '让两人成为恋人。恋人活到最后即恋人阵营获胜。', '第一夜选择两人成为恋人（可选自己）。恋人一方死亡，另一方也会殉情。两名恋人都活到最后，则胜过所有阵营。'],
     },
   },
 };
