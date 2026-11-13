@@ -740,3 +740,16 @@ main, .top { position: relative; z-index: 1; }
 .fx-amb.fall .amb-blood .sp { animation: spHit .28s cubic-bezier(.2, 1.3, .4, 1) forwards; }
 @keyframes spHit { to { transform: scale(1); opacity: .93; } }
 .amb-blood { filter: drop-shadow(0 0 1px rgba(40, 0, 0, .6)); }
+
+.owner-phone { display: grid; gap: 8px; justify-items: start; padding: 12px; border: 1px dashed rgba(217, 180, 90, .45); border-radius: 6px; }
+.owner-phone b { color: var(--gold); display: inline-flex; gap: 6px; align-items: center; }
+.qr.sm { width: 160px; }
+.owner-card { border-color: rgba(217, 180, 90, .45); }
+
+.fx-vid { background: #000; }
+.fxv { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.vid-end { position: absolute; inset: 0; opacity: 0; transition: opacity 1s; background: rgba(0, 0, 0, .55); }
+.fx-vid.final .vid-end { opacity: 1; }
+.vid-end .center-text h2, .vid-end .center-text p { animation: none; opacity: 0; }
+.fx-vid.final .vid-end .center-text h2 { animation: textIn 1.2s .2s both; }
+.fx-vid.final .vid-end .center-text p { animation: textIn 1.2s .7s both; color: #ffc7c0; }

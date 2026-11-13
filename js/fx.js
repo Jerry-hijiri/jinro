@@ -101,12 +101,35 @@ const SCENE_NAMES = ['kill', 'guillotine_plate', 'blade', 'alley'];
 const sceneOk = {};
 let gore = true;
 export function setGore(v) { gore = !!v; }
+// Geminiなどで作った動画（img/video/kill.mp4・exec.mp4）があれば最優先で使う
+const VIDEOS = {};
+['kill', 'exec'].forEach((n) => {
+  VIDEOS[n] = fetch(`img/video/${n}.mp4`, { method: 'HEAD' }).then((r) => {
+    if (!r.ok) return false;
+    const v = document.createElement('video'); v.preload = 'auto'; v.muted = true; v.src = `img/video/${n}.mp4`; v.load();
+    return true;
+  }).catch(() => false);
+  VIDEOS[n].then((ok) => { VIDEOS[n + 'Ok'] = ok; });
+});
+function playVideo(name, endHtml) {
+  const p = mount('fx-vid', `<video class="fxv" src="img/video/${name}.mp4" playsinline preload="auto"></video><div class="vid-end">${endHtml}</div>`, 30000);
+  const c = mount.last;
+  const v = c.el.querySelector('video');
+  sound.play(null);
+  v.volume = Math.max(0.2, sound.sfxVol);
+  v.muted = !sound.sfxOn;
+  v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
+  v.addEventListener('ended', () => { c.el.classList.add('final'); c.at(4200, c.finish); });
+  v.addEventListener('error', () => c.at(100, c.finish));
+  return p;
+}
 SCENE_NAMES.forEach((n) => scene(n).then((ok) => { sceneOk[n] = ok; }));
 
 const drips = (n = 14) => Array.from({ length: n }, () => `<i style="left:${(Math.random() * 100).toFixed(1)}%;--h:${(18 + Math.random() * 40).toFixed(0)}vh;--w:${(3 + Math.random() * 7).toFixed(1)}px;animation-delay:${(Math.random() * 1.2).toFixed(2)}s"></i>`).join('');
 const spray = (n = 26) => Array.from({ length: n }, () => { const a = -Math.PI * (0.08 + Math.random() * 0.84); const d = 14 + Math.random() * 46; const sz = 2 + Math.random() * 6; return `<i style="--x:${(Math.cos(a) * d).toFixed(1)}vmin;--y:${(Math.sin(a) * d * 0.9).toFixed(1)}vmin;--r:${(a * 180 / Math.PI + 90).toFixed(0)}deg;--w:${sz.toFixed(1)}px;--l:${(sz * (3 + Math.random() * 5)).toFixed(0)}px;animation-delay:${(Math.random() * .18).toFixed(2)}s"></i>`; }).join('');
 
 export function morning(day, victims) {
+  if (victims.length && gore && VIDEOS.killOk) return playVideo('kill', `<div class="center-text low"><h2>${esc(t('morningN', { n: day }))}</h2><p>${esc(t('morningDead', { names: joinNames(victims.map((v) => v.name)) }))}</p></div>`);
   if (victims.length && gore && sceneOk.alley && sceneOk.kill) return ambush(day, victims);
   if (!victims.length) {
     const p = mount('fx-morning', `<div class="dawn"></div><div class="sun"></div>${village(false)}
@@ -200,6 +223,7 @@ function ambush(day, victims) {
 }
 
 export function execution(victim, lot) {
+  if (gore && VIDEOS.execOk) return playVideo('exec', `<div class="center-text low"><p>${lot ? esc(t('lot')) + '<br>' : ''}${esc(t('executed', { name: victim.name }))}</p></div>`);
   const real = gore && sceneOk.guillotine_plate && sceneOk.blade;
   const ini = esc([...victim.name.replace(/^CPU\s+/, '')][0] || '?');
   const p = mount('fx-exec' + (real ? ' real' : ''), real ? `

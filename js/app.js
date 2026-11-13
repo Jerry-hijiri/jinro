@@ -21,6 +21,8 @@ window.__sound = sound;
 window.addEventListener('fx-done', () => { if (app.client?.pub) setBgm(app.client.pub); });
 const DEMO = params.get('demo') === '1';
 const AUTO = params.get('auto') === '1';
+const IS_PC = matchMedia('(pointer: fine)').matches && !('ontouchstart' in window) && Math.min(screen.width, screen.height) >= 700;
+const OWNER_TOKEN = params.get('o') || null;
 if (params.get('mute') === '1') { sound.bgmOn = false; sound.sfxOn = false; }
 
 /* ---------- 小物 ---------- */
@@ -249,7 +251,7 @@ function mainView() {
     return joinForm(pub);
   }
   if (pub.phase === 'lobby') return playerLobby(pub, priv);
-  return playerGame(pub, priv);
+  return playerGame(pub, priv) + (priv.owner ? hostPanel(pub) : '');
 }
 
 /* ---------- ホーム ---------- */
@@ -370,6 +372,12 @@ function scoreboard(pub, { reset = false } = {}) {
     <ol class="scores">${rows}</ol><p class="note">${esc(t('scoreNote'))}</p>
     ${reset ? `<div class="row end"><button class="btn xs ghost" data-act="resetScores">${esc(t('resetScores'))}</button></div>` : ''}</div>`;
 }
+const ownerUrl = () => { const u = new URL(joinUrl()); u.searchParams.set('o', app.engine.s.ownerToken); return u.toString(); };
+function ownerPhoneHtml() {
+  return `<div class="owner-phone"><b>${icon.crown} ${esc(t('ownerPhoneTitle'))}</b><p class="note">${esc(t('ownerPhoneNote'))}</p>
+    ${app.ui.ownerQr ? `<div class="qr-wrap"><div class="qr sm">${qrSvg(ownerUrl())}</div></div><button class="btn xs ghost" data-act="ownerQr">${esc(t('hideOwnerQr'))}</button>` : `<button class="btn sm" data-act="ownerQr">${esc(t('showOwnerQr'))}</button>`}
+    <button class="btn xs ghost" data-act="pcJoin">${esc(t('joinOnThisPc'))}</button></div>`;
+}
 function hostLobby(pub) {
   const e = app.engine;
   const n = pub.players.length;
@@ -394,10 +402,10 @@ function hostLobby(pub) {
       </div>
       <div class="card">
         <h3>${esc(t('playersN', { n }))}</h3>
-        <ul class="plist">${pub.players.map((p) => `<li>${av(p)}<span class="pn">${esc(p.name)}</span>${p.bot ? '<span class="badge cpu">CPU</span>' : ''}${p.host ? `<span class="badge">${icon.crown}${esc(t('host'))}</span>` : `<button class="btn xs ghost" data-act="kick" data-id="${esc(p.id)}">${esc(t('kick'))}</button>`}</li>`).join('') || `<li class="empty">${esc(t('scanToJoin'))}…</li>`}</ul>
+        <ul class="plist">${pub.players.map((p) => `<li>${av(p)}<span class="pn">${esc(p.name)}</span>${p.bot ? '<span class="badge cpu">CPU</span>' : ''}${p.host || p.owner ? `<span class="badge">${icon.crown}${esc(t('host'))}</span>` : ''}${p.host ? '' : `<button class="btn xs ghost" data-act="kick" data-id="${esc(p.id)}">${esc(t('kick'))}</button>`}</li>`).join('') || `<li class="empty">${esc(t('scanToJoin'))}…</li>`}</ul>
         <button class="btn sm ghost add-cpu" data-act="addBot">＋ ${esc(t('addCpu'))}</button>
         <div class="host-join">
-          ${hostIn ? `<button class="btn sm ghost" data-act="hostLeave">${esc(t('hostLeave'))}</button>` : `<div class="row"><input id="hostName" maxlength="12" placeholder="${esc(t('hostName'))}" value="${esc(app.inputs.hostName || '')}"><button class="btn sm" data-act="hostJoin">${esc(t('hostPlays'))}</button></div><p class="note">${esc(t('gmNote'))}</p>`}
+          ${IS_PC && !hostIn && !app.ui.pcJoin ? ownerPhoneHtml() : hostIn ? `<button class="btn sm ghost" data-act="hostLeave">${esc(t('hostLeave'))}</button>` : `<div class="row"><input id="hostName" maxlength="12" placeholder="${esc(t('hostName'))}" value="${esc(app.inputs.hostName || '')}"><button class="btn sm" data-act="hostJoin">${esc(t('hostPlays'))}</button></div><p class="note">${esc(t('gmNote'))}</p>`}
         </div>
       </div>
       ${scoreboard(pub, { reset: true })}
@@ -436,15 +444,23 @@ function joinForm(pub) {
   </section>`;
 }
 
+function ownerLobbyCard(pub) {
+  const errs = validate(pub.cfg, pub.players.length);
+  return `<div class="card owner-card"><h3>${icon.crown} ${esc(t('hostPanel'))}</h3>
+    ${errs.length ? `<ul class="errs">${errs.map(([k, v]) => `<li>${esc(t(k, v))}</li>`).join('')}</ul>` : ''}
+    <div class="row"><button class="btn sm ghost" data-act="rec">${esc(t('recommended'))}</button></div>
+    <button class="btn primary big start" data-act="start" ${errs.length ? 'disabled' : ''}>${esc(t('start'))}</button></div>`;
+}
 function playerLobby(pub, priv) {
   const n = pub.players.length;
   return `<section class="narrow">
     <div class="card">
       <div class="card-h"><h3>${esc(t('playersN', { n }))}</h3><span class="waiting-dot">${esc(t('waitingHost'))}</span></div>
-      <ul class="plist">${pub.players.map((p) => `<li class="${p.id === app.client.pid ? 'me' : ''}">${av(p)}<span class="pn">${esc(p.name)}</span>${p.id === app.client.pid ? `<span class="badge me">${esc(t('you'))}</span>` : ''}${p.host ? `<span class="badge">${icon.crown}${esc(t('host'))}</span>` : ''}</li>`).join('')}</ul>
+      <ul class="plist">${pub.players.map((p) => `<li class="${p.id === app.client.pid ? 'me' : ''}">${av(p)}<span class="pn">${esc(p.name)}</span>${p.id === app.client.pid ? `<span class="badge me">${esc(t('you'))}</span>` : ''}${p.host || p.owner ? `<span class="badge">${icon.crown}${esc(t('host'))}</span>` : ''}</li>`).join('')}</ul>
       ${app.ui.editName ? `<div class="row"><input id="renameIn" maxlength="12" value="${esc(app.inputs.renameIn ?? priv.name)}"><button class="btn sm" data-act="rename">${esc(t('save'))}</button></div>` : `<div class="row end"><button class="btn xs ghost" data-act="editName">${esc(t('editName'))}</button><button class="btn xs ghost" data-act="leave">${esc(t('leave'))}</button></div>`}
     </div>
     ${scoreboard(pub)}
+    ${priv.owner ? ownerLobbyCard(pub) : ''}
     <div class="card"><h3>${esc(t('rolesInGame'))}</h3>${rolesHtml(full(pub.cfg))}${balanceMeter(pub.cfg)}</div>
     <div class="card"><h3>${esc(t('howTo'))}</h3>${howToHtml()}</div>
   </section>`;
@@ -664,7 +680,7 @@ function endView(pub, priv) {
     const r = roles[p.id];
     return `<li class="${wins(r) ? 'win' : ''} ${p.alive ? '' : 'dead'}">${av(p)}<b class="pn">${esc(p.name)}</b><span class="rr">${roleArt(r, 'xs')}${esc(roleName(r))}</span>${tag(p)}${wins(r) ? `<span class="wm">${esc(t('winnerMark'))}</span>` : ''}</li>`;
   }).join('');
-  const isHost = app.view === 'host';
+  const isHost = app.view === 'host' || priv?.owner;
   return `<section class="narrow">
     <div class="win-banner w-${w}"><div class="wb-i">${roleIcon(w === 'village' ? 'villager' : w === 'wolf' ? 'werewolf' : 'fox', 64)}</div><h2>${esc(t('win_title_' + w))}</h2><p>${esc(t('win_sub_' + w))}</p></div>
     ${scoreboard(pub)}
@@ -786,6 +802,9 @@ function onChange(e) {
   renderHeader();
 }
 
+// オーナー操作：PCなら直接、オーナーのスマホならPCへ依頼を送る
+function hc(cmd, direct) { if (app.engine) direct(); else app.client.send({ t: 'host', cmd }); }
+
 const actions = {
   home() { location.href = location.pathname + (MODE === 'bc' ? '?t=bc' : ''); },
   reload() { location.reload(); },
@@ -814,12 +833,14 @@ const actions = {
   },
   hostLeave() { app.engine.hostLeave(); },
   cfg(el) { app.engine.setCfg(el.dataset.role, +el.dataset.d); sound.sfxPlay('click'); },
-  rec() { app.engine.applyRec(); sound.sfxPlay('select'); },
-  start() { if (app.engine.start()) sound.sfxPlay('confirm'); },
+  rec() { hc('rec', () => app.engine.applyRec()); sound.sfxPlay('select'); },
+  ownerQr() { app.ui.ownerQr = !app.ui.ownerQr; render(); },
+  pcJoin() { app.ui.pcJoin = true; render(); },
+  start() { hc('start', () => app.engine.start()); sound.sfxPlay('confirm'); },
   join() {
     const n = (app.inputs.joinName || '').trim();
     if (!n) { $('#joinName')?.focus(); return; }
-    app.client.send({ t: 'join', name: n }); sound.sfxPlay('join');
+    app.client.send({ t: 'join', name: n, owner: OWNER_TOKEN || undefined }); sound.sfxPlay('join');
   },
   editName() { app.ui.editName = true; render(); },
   rename() {
@@ -838,16 +859,16 @@ const actions = {
   doVote() { if (!app.ui.sel) return; app.client.send({ t: 'vote', target: app.ui.sel }); sound.sfxPlay('confirm'); },
   skip() { app.client.send({ t: 'skip' }); sound.sfxPlay('click'); },
   panel() { app.ui.panel = !app.ui.panel; render(); },
-  toVote() { app.engine.startVote(); },
-  addMin() { app.engine.addTime(60); },
+  toVote() { hc('toVote', () => app.engine.startVote()); },
+  addMin() { hc('addMin', () => app.engine.addTime(60)); },
   force() {
     const pub = app.client.pub;
     const pr = progress(pub);
     if (['night', 'vote'].includes(pub.phase) && pr.a < pr.b && !confirm(t('forceConfirm'))) return;
-    app.engine.forceNext();
+    hc('force', () => app.engine.forceNext());
   },
-  endGame() { if (confirm(t('endConfirm'))) app.engine.backToLobby(); },
-  again() { app.engine.backToLobby(); },
+  endGame() { if (confirm(t('endConfirm'))) hc('lobby', () => app.engine.backToLobby()); },
+  again() { hc('lobby', () => app.engine.backToLobby()); },
   addBot() { app.engine.addBot(); sound.sfxPlay('join'); },
   resetScores() { if (confirm(t('resetConfirm'))) app.engine.resetScores(); },
   toggleRoles() { app.ui.showRoles = !app.ui.showRoles; render(); },

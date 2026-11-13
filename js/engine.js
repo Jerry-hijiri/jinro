@@ -2,7 +2,7 @@
 import { ROLE_ORDER, ROLES, recommend, validate, full, points, MAX_PLAYERS } from './roles.js';
 import { deriveKey, seal, unseal } from './net.js';
 
-export const T = { intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 9000, nightMin: 4200 };
+export const T = { intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 12000, nightMin: 4200 };
 
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -20,6 +20,7 @@ export class Engine {
     this.onPublic = null;
     this.s = saved || this.fresh();
     this.s.scores ||= {};
+    this.s.ownerToken ||= uid() + uid();
     if (this.s.settings && !('gore' in this.s.settings)) this.s.settings.gore = true;
     this.s.round ||= 0;
     this.timer = null;
@@ -90,12 +91,19 @@ export class Engine {
       case 'join': {
         const name = String(msg.name || '').replace(/[\u0000-\u001f<>]/g, '').trim().slice(0, 12);
         if (!name) return;
-        if (p) { p.name = this.uniqueName(name, pid); break; }
+        const isOwner = typeof msg.owner === 'string' && msg.owner === s.ownerToken;
+        if (p) { p.name = this.uniqueName(name, pid); if (isOwner) p.owner = true; break; }
         if (s.phase !== 'lobby') { this.cache.delete(pid); this.sendPriv(pid); return; }
         if (s.players.length >= MAX_PLAYERS) return;
-        s.players.push({ id: pid, name: this.uniqueName(name, pid), alive: true, host: pid === this.localPid, death: null });
+        s.players.push({ id: pid, name: this.uniqueName(name, pid), alive: true, host: pid === this.localPid, owner: isOwner, death: null });
         if (s.cfgAuto) s.cfg = recommend(s.players.length);
         break;
+      }
+      case 'host': {
+        if (!p?.owner) return;
+        const f = { start: () => this.start(), toVote: () => this.startVote(), addMin: () => this.addTime(60), force: () => this.forceNext(), lobby: () => this.backToLobby(), rec: () => this.applyRec() }[msg.cmd];
+        if (f) f();
+        return;
       }
       case 'leave':
         if (s.phase === 'lobby' && p) this.removePlayer(pid);
@@ -518,7 +526,7 @@ export class Engine {
     return {
       v: 1, room: this.room, hostPub: this.ident.pub, phase: ph, day: s.day, anim: s.anim,
       sentAt: Date.now(), endsIn: s.endsAt ? Math.max(0, s.endsAt - Date.now()) : null,
-      players: s.players.map((p) => ({ id: p.id, name: p.name, alive: p.alive, host: !!p.host, bot: !!p.bot, death: p.death, done: done(p) })),
+      players: s.players.map((p) => ({ id: p.id, name: p.name, alive: p.alive, host: !!p.host, owner: !!p.owner, bot: !!p.bot, death: p.death, done: done(p) })),
       cfg: s.cfg, cfgAuto: s.cfgAuto, settings: s.settings, candidates: s.candidates, voteResult: vr,
       skip: s.skip.length, winner: s.winner, reveal: ph === 'end' ? s.roles : null, history: s.history,
       scores: Object.fromEntries(s.players.map((p) => [p.id, s.scores[p.id] || 0])), round: s.round, lastResult: s.lastResult, pts: ph === 'lobby' ? points(s.cfg) : s.pts,
@@ -530,7 +538,7 @@ export class Engine {
     const p = this.P(pid);
     if (!p) return { joined: false, phase: s.phase };
     const role = s.roles[pid] || null;
-    const o = { joined: true, name: p.name, role };
+    const o = { joined: true, name: p.name, role, owner: !!p.owner };
     if (!role || s.phase === 'lobby') { o.role = null; return o; }
     const ids = (r) => s.players.filter((x) => s.roles[x.id] === r).map((x) => x.id);
     if (role === 'werewolf') {
