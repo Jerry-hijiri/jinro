@@ -147,6 +147,7 @@ function onUpdate() {
       lastPhase = pub.phase;
     }
     handleAnim(pub);
+    handleFun(pub);
     setBgm(pub);
   }
   render();
@@ -154,6 +155,17 @@ function onUpdate() {
 
 function goreOn(pub) {
   return pub?.settings?.gore !== false;
+}
+let lastFun = null;
+function handleFun(pub) {
+  const f = pub.fun;
+  if (!f || f.id === lastFun) return;
+  const first = lastFun === null;
+  lastFun = f.id;
+  const age = (pub.sentAt - f.at) + (Date.now() - app.client.recvAt);
+  if (first && age > 3000) return;
+  if (age > 8000) return;
+  if (f.kind === 'poop') fx.poop(nameOf(f.from));
 }
 function handleAnim(pub) {
   fx.setGore(goreOn(pub));
@@ -687,6 +699,21 @@ function resultView(pub, priv) {
   return `<section class="narrow"><div class="phase-head vote"><h2>${esc(t('voteResult'))}</h2></div>${tallyHtml(pub)}${myPanel(priv)}</section>`;
 }
 
+const SIDE_KEY = { village: 'villageSide', wolf: 'wolfSide', fox: 'foxSide', lovers: 'loversSide' };
+function betCard(pub, priv) {
+  const info = priv.betInfo;
+  if (!info) return '';
+  if (priv.bet) {
+    const b = priv.bet;
+    return `<div class="card bet bet-placed"><h3>${esc(t('betTitle'))}</h3><p class="bet-line">${esc(t('betDone', { side: t(SIDE_KEY[b.side]), n: b.amount, w: Math.round(b.amount * b.mult) }))}</p></div>`;
+  }
+  const side = app.ui.betSide || null;
+  const amt = Math.min(info.max, Math.max(1, app.ui.betAmt || Math.min(info.max, 5)));
+  return `<div class="card bet"><h3>${esc(t('betTitle'))}</h3><p class="note">${esc(t('betNote'))}</p>
+    <div class="bet-sides">${info.sides.map((x) => `<button class="btn ${side === x.side ? 'on' : 'ghost'} bs-${x.side}" data-act="betSide" data-side="${x.side}">${esc(t(SIDE_KEY[x.side]))}<small>×${x.mult}</small></button>`).join('')}</div>
+    <div class="bet-amt"><span>${esc(t('betAmount'))}</span><div class="stepper"><button data-act="betAmt" data-d="-5" ${amt <= 1 ? 'disabled' : ''}>−5</button><button data-act="betAmt" data-d="-1" ${amt <= 1 ? 'disabled' : ''}>−</button><span>${amt}</span><button data-act="betAmt" data-d="1" ${amt >= info.max ? 'disabled' : ''}>＋</button><button data-act="betAmt" data-d="5" ${amt >= info.max ? 'disabled' : ''}>+5</button></div><small>/ ${info.max}</small></div>
+    <button class="btn primary big" data-act="placeBet" ${side ? '' : 'disabled'}>${esc(t('betPlace'))}${side ? `：${esc(t(SIDE_KEY[side]))} ${amt}${esc(t('ptUnit'))}` : ''}</button></div>`;
+}
 function spectator(pub, priv) {
   const ph = pub.phase;
   const pr = progress(pub);
@@ -695,7 +722,8 @@ function spectator(pub, priv) {
   else if (ph === 'vote') sub = t('votingN', pr);
   else if (ph === 'day') sub = t('discussion');
   return `<section class="narrow ghost-view">
-    <div class="card msg dead-msg"><div class="ghost-i">✝</div><h2>${esc(t('youDead'))}</h2><p>${esc(t('youDeadNote'))}</p>${ph === 'day' ? '<div class="timer" data-deadline="1">--:--</div>' : ''}<p class="waiting">${esc(sub)}</p></div>
+    <div class="card msg dead-msg"><div class="ghost-i">✝</div><h2>${esc(t('youDead'))}</h2><p>${esc(t('youDeadNote'))}</p><button class="btn poop-btn" data-act="poop">💩 ${esc(t('poopBtn'))}</button>${ph === 'day' ? '<div class="timer" data-deadline="1">--:--</div>' : ''}<p class="waiting">${esc(sub)}</p></div>
+    ${betCard(pub, priv)}
     ${ph === 'voteResult' || ph === 'execution' ? tallyHtml(pub) : ''}
     ${priv.allRoles ? `<h3 class="sec-h">${esc(t('spectator'))}</h3>` : ''}
     ${grid(pub.players, { roles: priv.allRoles, showDone: ph === 'night' || ph === 'vote' })}
@@ -929,6 +957,14 @@ const actions = {
   },
   endGame() { if (confirm(t('endConfirm'))) hc('lobby', () => app.engine.backToLobby()); },
   again() { hc('lobby', () => app.engine.backToLobby()); },
+  poop() { app.client.send({ t: 'poop' }); },
+  betSide(el) { app.ui.betSide = el.dataset.side; sound.sfxPlay('select'); render(); },
+  betAmt(el) { const max = app.client.priv?.betInfo?.max || 5; app.ui.betAmt = Math.min(max, Math.max(1, (app.ui.betAmt || Math.min(max, 5)) + +el.dataset.d)); sound.sfxPlay('click'); render(); },
+  placeBet() {
+    const info = app.client.priv?.betInfo; if (!info || !app.ui.betSide) return;
+    const amt = Math.min(info.max, Math.max(1, app.ui.betAmt || Math.min(info.max, 5)));
+    app.client.send({ t: 'bet', side: app.ui.betSide, amount: amt }); sound.sfxPlay('confirm');
+  },
   addBot() { app.engine.addBot(); sound.sfxPlay('join'); },
   resetScores() { if (confirm(t('resetConfirm'))) app.engine.resetScores(); },
   toggleRoles() { app.ui.showRoles = !app.ui.showRoles; render(); },

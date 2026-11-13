@@ -231,6 +231,11 @@ const TRACKS = {
 };
 
 const SFX = {
+  poop(s, t) {
+    s.noise(t, 0.35, { ft: 'lowpass', f: 380, f2: 120, q: 4, gain: 0.5 });
+    s.tone(140, t, 0.3, { type: 'square', gain: 0.06, dest: s.sfx, glide: 70, lp: 600 });
+    s.tone(520, t + 0.32, 0.25, { type: 'sine', gain: 0.08, dest: s.sfx, glide: 900 });
+  },
   flee(s, t) {
     // 走る足音・荒い息・速い鼓動（約3.8秒）
     for (let i = 0; i < 12; i++) {

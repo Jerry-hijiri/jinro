@@ -288,3 +288,28 @@ export function ending(winner) {
   else { sound.sfxPlay('fox'); sound.play('endWolf'); }
   return p;
 }
+
+// 死んだ人のお遊び：画面を横切ってうんこが流れる（操作はふさがない）
+export function poop(fromName) {
+  let lay = document.getElementById('poop-layer');
+  if (!lay) { lay = document.createElement('div'); lay.id = 'poop-layer'; document.body.appendChild(lay); }
+  const n = 7 + Math.floor(Math.random() * 5);
+  for (let i = 0; i < n; i++) {
+    const el = document.createElement('div');
+    el.className = 'poop';
+    el.textContent = '💩';
+    const top = 8 + Math.random() * 78, size = 34 + Math.random() * 46, dur = 2.6 + Math.random() * 1.8, delay = Math.random() * 0.9;
+    const dir = Math.random() < 0.5 ? 1 : -1;
+    el.style.cssText = `top:${top}%;font-size:${size}px;animation-duration:${dur}s;animation-delay:${delay}s;--dir:${dir}`;
+    lay.appendChild(el);
+    setTimeout(() => el.remove(), (dur + delay) * 1000 + 200);
+  }
+  if (fromName) {
+    const tag = document.createElement('div');
+    tag.className = 'poop-from';
+    tag.textContent = t('poopFrom', { name: fromName });
+    lay.appendChild(tag);
+    setTimeout(() => tag.remove(), 3200);
+  }
+  sound.sfxPlay('poop');
+}

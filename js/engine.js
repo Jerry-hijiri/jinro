@@ -1,5 +1,5 @@
 // オーナーの端末で動く進行役（ゲームの正本）。参加者にはこの端末から状態を配る。
-import { ROLE_ORDER, ROLES, recommend, validate, full, points, MAX_PLAYERS } from './roles.js';
+import { ROLE_ORDER, ROLES, recommend, validate, full, points, balance, MAX_PLAYERS } from './roles.js';
 import { deriveKey, seal, unseal } from './net.js';
 
 export const T = { intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 15000, nightMin: 4200 };
@@ -136,6 +136,27 @@ export class Engine {
         if (this.alive().every((x) => x.id in s.votes)) { this.tally(); return; }
         break;
       }
+      case 'poop': {
+        // 死んだ人のお遊び：全員の画面にうんこを流す（連打防止で4秒に1回）
+        if (!p || p.alive || s.phase === 'lobby') return;
+        this.poopAt ||= {};
+        if (Date.now() - (this.poopAt[pid] || 0) < 4000) return;
+        this.poopAt[pid] = Date.now();
+        s.fun = { id: uid(), kind: 'poop', from: pid, at: Date.now() };
+        break;
+      }
+      case 'bet': {
+        // 死んだ人の賭け：勝つ陣営に自分の点数を賭ける（1試合1回・変更不可）
+        if (!p || p.alive || s.phase === 'lobby' || s.phase === 'end') return;
+        s.bets ||= {};
+        if (s.bets[pid]) return;
+        const info = this.betInfo(pid);
+        const side = info.sides.find((x) => x.side === msg.side);
+        const amount = Math.floor(Number(msg.amount));
+        if (!side || !(amount >= 1 && amount <= info.max)) return;
+        s.bets[pid] = { side: side.side, amount, mult: side.mult };
+        break;
+      }
       case 'skip': {
         if (s.phase !== 'day' || !p || !p.alive) return;
         const i = s.skip.indexOf(pid);
@@ -257,10 +278,12 @@ export class Engine {
     s.players.forEach((p) => { p.alive = true; p.death = null; });
     Object.assign(s, {
       day: 0, acts: {}, votes: {}, candidates: null, runoffDone: false, lastGuard: null,
-      seerLog: {}, mediumLog: [], medPending: null, medNow: null, nightResult: {}, history: [], winner: null, lovers: null,
+      seerLog: {}, mediumLog: [], medPending: null, medNow: null, nightResult: {}, history: [], winner: null, lovers: null, bets: {}, fun: null,
       ready: [], skip: [], voteResult: null, phase: 'intro',
     });
     s.pts = points(s.cfg);
+    s.odds = balance(s.cfg);
+    s.bets = {};
     this.anim('intro');
     this.arm(T.intro, 'toRole');
     this.commit();
@@ -301,8 +324,19 @@ export class Engine {
       deltas[id] = after - before[id];
       s.scores[id] = after;
     }
+    // 賭けの精算（当たり＝賭け点×倍率、外れ＝賭け点を失う。0点より下にはならない）
+    const betRes = {};
+    for (const [id, b] of Object.entries(s.bets || {})) {
+      if (!ids.includes(id)) continue;
+      const cur = s.scores[id] || 0;
+      const d = b.side === win ? Math.round(b.amount * b.mult) : -b.amount;
+      const after = Math.max(0, cur + d);
+      betRes[id] = { ...b, won: b.side === win, delta: after - cur };
+      deltas[id] = (deltas[id] || 0) + (after - cur);
+      s.scores[id] = after;
+    }
     s.round += 1;
-    s.lastResult = { round: s.round, deltas, prevRank, rank: this.ranks(ids, s.scores), winner: win };
+    s.lastResult = { round: s.round, deltas, prevRank, rank: this.ranks(ids, s.scores), winner: win, bets: betRes };
   }
 
   resetScores() {
@@ -537,6 +571,16 @@ export class Engine {
     }
   }
 
+  betInfo(pid) {
+    const s = this.s;
+    const o = s.odds || balance(s.cfg) || { village: .5, wolf: .5, fox: 0, lovers: 0 };
+    const mult = (p) => Math.max(1, Math.min(3, Math.round(((1 - p) / Math.max(p, 0.05)) * 10) / 10));
+    const sides = [{ side: 'village', p: o.village }, { side: 'wolf', p: o.wolf }];
+    if (s.cfg.fox) sides.push({ side: 'fox', p: o.fox || 0.1 });
+    if (s.cfg.cupid) sides.push({ side: 'lovers', p: o.lovers || 0.1 });
+    return { max: Math.max(5, s.scores[pid] || 0), sides: sides.map((x) => ({ side: x.side, mult: mult(x.p) })) };
+  }
+
   loverOf(id) {
     const L = this.s.lovers;
     if (!L || !L.includes(id)) return null;
@@ -578,6 +622,7 @@ export class Engine {
       players: s.players.map((p) => ({ id: p.id, name: p.name, alive: p.alive, host: !!p.host, owner: !!p.owner, bot: !!p.bot, death: p.death, done: done(p) })),
       cfg: s.cfg, cfgAuto: s.cfgAuto, settings: s.settings, candidates: s.candidates, voteResult: vr,
       skip: s.skip.length, winner: s.winner, reveal: ph === 'end' ? s.roles : null, lovers: ph === 'end' ? s.lovers : null, history: s.history,
+      fun: s.fun || null,
       scores: Object.fromEntries(s.players.map((p) => [p.id, s.scores[p.id] || 0])), round: s.round, lastResult: s.lastResult, pts: ph === 'lobby' ? points(s.cfg) : s.pts,
     };
   }
@@ -605,6 +650,7 @@ export class Engine {
     if (s.phase === 'day') o.skipped = s.skip.includes(pid);
     if (!p.alive && s.settings.deadSee) o.allRoles = s.roles;
     if (!p.alive && s.settings.deadSee) o.allLovers = s.lovers;
+    if (!p.alive && s.phase !== 'end') { o.betInfo = this.betInfo(pid); o.bet = s.bets?.[pid] || null; }
     return o;
   }
 
