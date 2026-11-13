@@ -2,7 +2,7 @@
 import { ROLE_ORDER, ROLES, recommend, validate, full, points, MAX_PLAYERS } from './roles.js';
 import { deriveKey, seal, unseal } from './net.js';
 
-export const T = { intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 12000, nightMin: 4200 };
+export const T = { intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 15000, nightMin: 4200 };
 
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = (a) => a[Math.floor(Math.random() * a.length)];

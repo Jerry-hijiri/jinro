@@ -753,3 +753,11 @@ main, .top { position: relative; z-index: 1; }
 .vid-end .center-text h2, .vid-end .center-text p { animation: none; opacity: 0; }
 .fx-vid.final .vid-end .center-text h2 { animation: textIn 1.2s .2s both; }
 .fx-vid.final .vid-end .center-text p { animation: textIn 1.2s .7s both; color: #ffc7c0; }
+
+.fx-vid.hit .slashes i { animation: slashIn .14s cubic-bezier(.6, 0, .3, 1) forwards, slashFade 2.4s .5s forwards; }
+.fx-vid.hit .slashes i:nth-child(2) { animation-delay: .08s, .58s; } .fx-vid.hit .slashes i:nth-child(3) { animation-delay: .16s, .66s; }
+.fx-vid.hit .flashw { animation: flashw .5s ease-out; }
+.fx-vid.hit .amb-blood .sp { animation: spHit .28s cubic-bezier(.2, 1.3, .4, 1) forwards; }
+.fx-vid.hit .drips i { animation: drip 3.4s cubic-bezier(.5, 0, .7, 1) forwards; }
+.fx-vid.hit .fxv { animation: quake .45s; }
+.fx-vid .vid-end { z-index: 5; }
