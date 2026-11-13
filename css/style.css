@@ -878,3 +878,12 @@ main, .top { position: relative; z-index: 1; }
 .bet-amt { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; flex-wrap: wrap; }
 .bet-amt .stepper button { width: auto; min-width: 34px; padding: 0 6px; }
 .bet-line { font-family: var(--serif); font-size: 17px; color: var(--gold); }
+
+.banner.bread.yes { background: rgba(217, 163, 90, .14); border: 1px solid rgba(217, 163, 90, .4); color: #f1d29b; }
+.banner.bread.no { background: rgba(80, 60, 40, .25); border: 1px solid rgba(120, 90, 60, .4); color: #b9a68a; }
+.bread-line { font-size: clamp(14px, 3.6vw, 18px) !important; color: #f1d29b !important; margin-top: 14px !important; }
+
+/* タイトル「人狼、バカ野郎！」を1行に収める */
+.hero h1 { font-size: clamp(30px, 9.5vw, 60px); white-space: nowrap; }
+.intro-text h1 { font-size: clamp(36px, 11vw, 120px); white-space: nowrap; letter-spacing: .06em; }
+.join-card h2 { white-space: nowrap; font-size: clamp(22px, 7vw, 28px); }

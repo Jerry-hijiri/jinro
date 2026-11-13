@@ -178,7 +178,7 @@ function handleAnim(pub) {
   const P = (id) => { const p = pub.players.find((x) => x.id === id) || { id, name: '?' }; return { ...p, color: colorOf(p.id) }; };
   if (a.kind === 'intro') fx.intro();
   else if (a.kind === 'night') fx.nightfall(a.day);
-  else if (a.kind === 'morning') fx.morning(a.day, (a.deaths || []).map(P));
+  else if (a.kind === 'morning') fx.morning(a.day, (a.deaths || []).map(P), a.bread);
   else if (a.kind === 'exec') fx.execution(P(a.victim), a.lot, a.follow ? P(a.follow) : null);
   else if (a.kind === 'end') fx.ending(a.winner);
 }
@@ -638,9 +638,9 @@ function nightView(pub, priv) {
 function lastNightBanner(pub) {
   const h = [...(pub.history || [])].reverse().find((x) => x.kind === 'night' && x.day === pub.day);
   if (!h) return '';
-  return h.deaths.length
+  return (h.deaths.length
     ? `<div class="banner dead">${esc(t('morningDeadShort', { names: joinNames(h.deaths.map(nameOf)) }))}</div>`
-    : `<div class="banner peace">${esc(t('morningPeace'))}</div>`;
+    : `<div class="banner peace">${esc(t('morningPeace'))}</div>`) + (h.bread == null ? '' : `<div class="banner bread ${h.bread ? 'yes' : 'no'}">${esc(t(h.bread ? 'breadYes' : 'breadNo'))}</div>`);
 }
 
 function dayView(pub, priv) {

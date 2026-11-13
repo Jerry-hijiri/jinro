@@ -465,10 +465,13 @@ export class Engine {
       if (mate && this.P(mate)?.alive) { const q = this.P(mate); q.alive = false; q.death = { day: n, how: 'love' }; deaths.push(mate); }
     }
     shuffle(deaths);
-    s.history.push({ day: n, kind: 'night', deaths: [...deaths] });
+    // パン屋：生きていれば毎朝パンが届く
+    const hasBaker = s.players.some((x) => r[x.id] === 'baker');
+    const bread = hasBaker ? s.players.some((x) => r[x.id] === 'baker' && x.alive) : null;
+    s.history.push({ day: n, kind: 'night', deaths: [...deaths], bread });
     s.phase = 'morning';
     s.acts = {};
-    this.anim('morning', { day: n, deaths });
+    this.anim('morning', { day: n, deaths, bread });
     this.arm(deaths.length ? T.morningDeath : T.morning, 'afterMorning');
     this.commit();
   }

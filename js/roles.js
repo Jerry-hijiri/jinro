@@ -1,5 +1,5 @@
 // 役職の定義・おすすめ構成・有利度の目安
-export const ROLE_ORDER = ['villager', 'werewolf', 'seer', 'medium', 'knight', 'mason', 'madman', 'fox', 'cupid'];
+export const ROLE_ORDER = ['villager', 'werewolf', 'seer', 'medium', 'knight', 'mason', 'baker', 'madman', 'fox', 'cupid'];
 
 export const ROLES = {
   villager: { team: 'village', color: '#8fb573', max: 20 },
@@ -11,6 +11,7 @@ export const ROLES = {
   madman:   { team: 'wolf', color: '#c46aa8', max: 2 },
   fox:      { team: 'fox', color: '#e98a3c', max: 1 },
   cupid:    { team: 'lovers', color: '#d06a9a', max: 1 },
+  baker:    { team: 'village', color: '#d9a35a', max: 1 },
 };
 
 // 64x64 のシンボル（メダルの中に描く）
@@ -22,6 +23,7 @@ const P = {
   knight: '<path d="M32 6l20 7v16c0 14-9 23-20 29C21 52 12 43 12 29V13z" fill="currentColor"/><path d="M29 16h6v10h10v6H35v16h-6V32H19v-6h10z" fill="#0b0f1a" opacity=".5"/>',
   mason: '<circle cx="24" cy="32" r="13" fill="none" stroke="currentColor" stroke-width="6"/><circle cx="40" cy="32" r="13" fill="none" stroke="currentColor" stroke-width="6" opacity=".85"/>',
   madman: '<path d="M10 16c14-6 30-6 44 0 0 20-8 36-22 40C18 52 10 36 10 16z" fill="currentColor"/><path d="M17 27c3-4 9-4 12 0-4 3-8 3-12 0zM35 27c3-4 9-4 12 0-4 3-8 3-12 0z" fill="#0b0f1a"/><path d="M20 39c8 8 16 8 24 0-4 9-20 9-24 0z" fill="#0b0f1a"/>',
+  baker: '<path d="M10 40c0-12 10-20 22-20s22 8 22 20v6H10z" fill="currentColor"/><path d="M20 30l4 8M30 27l2 9M40 28l-1 9M48 32l-3 7" stroke="#0b0f1a" stroke-width="2.5" opacity=".5"/>',
   cupid: '<path d="M32 54C14 42 8 32 8 23c0-8 6-13 12-13 5 0 9 3 12 8 3-5 7-8 12-8 6 0 12 5 12 13 0 9-6 19-24 31z" fill="currentColor"/><path d="M6 46L56 14" stroke="#f3e2c0" stroke-width="3"/><path d="M56 14l-9 1 5 6z" fill="#f3e2c0"/>',
   fox: '<path d="M9 7l15 19h16L55 7l-2 25-21 26-21-26z" fill="currentColor"/><path d="M14 30l9 4-7 3zM50 30l-9 4 7 3z" fill="#0b0f1a"/><path d="M27 48h10l-5 8z" fill="#fff" opacity=".8"/>',
 };

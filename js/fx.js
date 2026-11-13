@@ -147,12 +147,13 @@ SCENE_NAMES.forEach((n) => scene(n).then((ok) => { sceneOk[n] = ok; }));
 const drips = (n = 14) => Array.from({ length: n }, () => `<i style="left:${(Math.random() * 100).toFixed(1)}%;--h:${(18 + Math.random() * 40).toFixed(0)}vh;--w:${(3 + Math.random() * 7).toFixed(1)}px;animation-delay:${(Math.random() * 1.2).toFixed(2)}s"></i>`).join('');
 const spray = (n = 26) => Array.from({ length: n }, () => { const a = -Math.PI * (0.08 + Math.random() * 0.84); const d = 14 + Math.random() * 46; const sz = 2 + Math.random() * 6; return `<i style="--x:${(Math.cos(a) * d).toFixed(1)}vmin;--y:${(Math.sin(a) * d * 0.9).toFixed(1)}vmin;--r:${(a * 180 / Math.PI + 90).toFixed(0)}deg;--w:${sz.toFixed(1)}px;--l:${(sz * (3 + Math.random() * 5)).toFixed(0)}px;animation-delay:${(Math.random() * .18).toFixed(2)}s"></i>`; }).join('');
 
-export function morning(day, victims) {
-  if (victims.length && gore && VIDEOS.killOk) return playVideo('kill', deathHtml(victims.map((v) => v.name), t('killSub'), t('morningN', { n: day })), () => { VIDEOS.killOk = false; morning(day, victims); });
-  if (victims.length && gore && sceneOk.alley && sceneOk.kill) return ambush(day, victims);
+export function morning(day, victims, bread = null) {
+  const breadTxt = bread == null ? '' : t(bread ? 'breadYes' : 'breadNo');
+  if (victims.length && gore && VIDEOS.killOk) return playVideo('kill', deathHtml(victims.map((v) => v.name), t('killSub'), t('morningN', { n: day }), '', breadTxt), () => { VIDEOS.killOk = false; morning(day, victims, bread); });
+  if (victims.length && gore && sceneOk.alley && sceneOk.kill) return ambush(day, victims, breadTxt);
   if (!victims.length) {
     const p = mount('fx-morning', `<div class="dawn"></div><div class="sun"></div>${village(false)}
-      <div class="center-text"><h2>${esc(t('morningN', { n: day + 0 }))}</h2><p>${esc(t('morningPeace'))}</p></div>`, 7000);
+      <div class="center-text"><h2>${esc(t('morningN', { n: day + 0 }))}</h2><p>${esc(t('morningPeace'))}</p>${breadTxt ? `<p class="bread-line">${esc(breadTxt)}</p>` : ''}</div>`, 7000);
     sound.sfxPlay('bell');
     return p;
   }
@@ -164,7 +165,7 @@ export function morning(day, victims) {
     <div class="kill-stage">${cards}</div>
     <div class="slashes"><i></i><i></i><i></i></div>
     <div class="splat"></div><div class="mist"></div><div class="drips">${drips()}</div><div class="vignette"></div>
-    ${deathHtml(victims.map((v) => v.name), t('killSub'), t('morningN', { n: day }))}`, 11000);
+    ${deathHtml(victims.map((v) => v.name), t('killSub'), t('morningN', { n: day }), '', breadTxt)}`, 11000);
   const c = mount.last;
   sound.sfxPlay('heartbeat');
   c.at(1200, () => sound.sfxPlay('growl'));
@@ -206,7 +207,7 @@ function splatSvg() {
 }
 
 // 襲撃の映像：逃げる → 振り返る → 安堵 → 黒い影に襲われる → 視点が地面に落ちる
-function ambush(day, victims) {
+function ambush(day, victims, breadTxt = '') {
   const names = joinNames(victims.map((v) => v.name));
   const blobs = splatSvg();
   const p = mount('fx-amb', `
@@ -223,7 +224,7 @@ function ambush(day, victims) {
     <div class="drips">${drips(16)}</div>
     <div class="amb-vig"></div>
     <div class="amb-end"><div class="scene-img" style="background-image:url(img/scenes/kill.webp)"></div>
-      ${deathHtml(victims.map((v) => v.name), t('killSub'), t('morningN', { n: day }))}</div>`, 16500);
+      ${deathHtml(victims.map((v) => v.name), t('killSub'), t('morningN', { n: day }), '', breadTxt)}</div>`, 16500);
   const c = mount.last;
   const step = (cls) => c.el.classList.add(cls);
   sound.play(null);
