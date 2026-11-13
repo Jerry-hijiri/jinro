@@ -55,7 +55,7 @@ const D = {
     ],
     tips: ['自分の画面を他の人に見せないこと', '死んだ人は話さず、表情でも伝えないこと', 'スマホの音を出すと臨場感アップ（オーナーのPCをスピーカーにつなぐのがおすすめ）'],
     tipsTitle: 'コツと約束',
-    addCpu: 'CPUを追加', ageTitle: 'この先、18歳未満お断り', ageBody: 'このゲームには流血・残酷な描写と大きな音が含まれます。あなたは18歳以上ですか？', ageYes: '18歳以上です', ageNo: 'いいえ（残酷な描写なしで遊ぶ）', optGore: '残酷な演出（R-18）', scoreboard: 'スコア順位', roundN: '{n}戦終了', pt: '{n}点', ptsLine: '勝ち +{w} / 負け −{l}', ptsTitle: '今回の点数', resetScores: 'スコアをリセット', resetConfirm: '全員のスコアを0に戻しますか？', scoreNote: '勝ちにくい側ほど、勝ったときの点が高くなります。0点より下にはなりません。',
+    addCpu: 'CPUを追加', ageTitle: 'この先、18歳未満お断り', ageBody: 'このゲームには流血・残酷な描写と大きな音が含まれます。あなたは18歳以上ですか？', ageYes: '18歳以上です', ageNo: 'いいえ（残酷な描写なしで遊ぶ）', optGore: '残酷な演出', scoreboard: 'スコア順位', roundN: '{n}戦終了', pt: '{n}点', ptsLine: '勝ち +{w} / 負け −{l}', ptsTitle: '今回の点数', resetScores: 'スコアをリセット', resetConfirm: '全員のスコアを0に戻しますか？', scoreNote: '勝ちにくい側ほど、勝ったときの点が高くなります。0点より下にはなりません。',
     rolesInGame: 'このゲームの役職', ability: '能力',
     roles: {
       villager: ['村人', '特別な力はないが、議論と投票で人狼を追い詰める。', '能力なし。夜は「怪しい人」を選ぶだけ（役職を隠すため）。'],
@@ -119,7 +119,7 @@ const D = {
     ],
     tips: ['Never show your screen to others', 'Dead players stay silent — no hints, not even with your face', 'Turn sound on for atmosphere (hook the host’s PC up to a speaker)'],
     tipsTitle: 'Tips & etiquette',
-    addCpu: 'Add CPU', ageTitle: 'Adults only (18+)', ageBody: 'This game contains blood, graphic violence and loud sounds. Are you 18 or older?', ageYes: 'I am 18 or older', ageNo: 'No (play without graphic scenes)', optGore: 'Graphic scenes (18+)', scoreboard: 'Leaderboard', roundN: 'After game {n}', pt: '{n} pts', ptsLine: 'Win +{w} / Lose −{l}', ptsTitle: 'Points this game', resetScores: 'Reset scores', resetConfirm: 'Reset everyone’s score to 0?', scoreNote: 'The worse your side’s odds, the more a win is worth. Scores never go below 0.',
+    addCpu: 'Add CPU', ageTitle: 'Adults only (18+)', ageBody: 'This game contains blood, graphic violence and loud sounds. Are you 18 or older?', ageYes: 'I am 18 or older', ageNo: 'No (play without graphic scenes)', optGore: 'Graphic scenes', scoreboard: 'Leaderboard', roundN: 'After game {n}', pt: '{n} pts', ptsLine: 'Win +{w} / Lose −{l}', ptsTitle: 'Points this game', resetScores: 'Reset scores', resetConfirm: 'Reset everyone’s score to 0?', scoreNote: 'The worse your side’s odds, the more a win is worth. Scores never go below 0.',
     rolesInGame: 'Roles in this game', ability: 'Ability',
     roles: {
       villager: ['Villager', 'No special power. Hunt the wolves through discussion and votes.', 'None. At night you just pick a suspect (to keep roles hidden).'],
@@ -183,7 +183,7 @@ const D = {
     ],
     tips: ['자기 화면을 다른 사람에게 보여 주지 않기', '죽은 사람은 말하지 않고, 표정으로도 알리지 않기', '소리를 켜면 몰입감 UP (호스트 PC를 스피커에 연결 추천)'],
     tipsTitle: '요령과 약속',
-    addCpu: 'CPU 추가', ageTitle: '18세 미만 이용 불가', ageBody: '이 게임에는 유혈·잔혹한 묘사와 큰 소리가 포함되어 있습니다. 18세 이상입니까?', ageYes: '18세 이상입니다', ageNo: '아니요 (잔혹한 연출 없이 플레이)', optGore: '잔혹한 연출 (18+)', scoreboard: '점수 순위', roundN: '{n}게임 종료', pt: '{n}점', ptsLine: '승리 +{w} / 패배 −{l}', ptsTitle: '이번 게임 점수', resetScores: '점수 초기화', resetConfirm: '모두의 점수를 0으로 되돌릴까요?', scoreNote: '이기기 어려운 쪽일수록 이겼을 때 점수가 높아요. 0점 아래로는 내려가지 않아요.',
+    addCpu: 'CPU 추가', ageTitle: '18세 미만 이용 불가', ageBody: '이 게임에는 유혈·잔혹한 묘사와 큰 소리가 포함되어 있습니다. 18세 이상입니까?', ageYes: '18세 이상입니다', ageNo: '아니요 (잔혹한 연출 없이 플레이)', optGore: '잔혹한 연출', scoreboard: '점수 순위', roundN: '{n}게임 종료', pt: '{n}점', ptsLine: '승리 +{w} / 패배 −{l}', ptsTitle: '이번 게임 점수', resetScores: '점수 초기화', resetConfirm: '모두의 점수를 0으로 되돌릴까요?', scoreNote: '이기기 어려운 쪽일수록 이겼을 때 점수가 높아요. 0점 아래로는 내려가지 않아요.',
     rolesInGame: '이번 게임의 직업', ability: '능력',
     roles: {
       villager: ['시민', '특별한 능력은 없지만 토론과 투표로 늑대인간을 몰아낸다.', '능력 없음. 밤에는 의심되는 사람을 고르기만 한다(직업을 숨기기 위해).'],
@@ -247,7 +247,7 @@ const D = {
     ],
     tips: ['不要把自己的屏幕给别人看', '死亡的玩家不要说话，也不要用表情暗示', '打开声音更有氛围（推荐把房主电脑接上音箱）'],
     tipsTitle: '技巧与约定',
-    addCpu: '添加电脑玩家', ageTitle: '未满18岁禁止', ageBody: '本游戏包含流血、残酷画面及巨大声响。你已年满18岁吗？', ageYes: '我已年满18岁', ageNo: '否（不显示残酷画面）', optGore: '残酷画面（18+）', scoreboard: '积分排名', roundN: '第{n}局结束', pt: '{n}分', ptsLine: '胜 +{w} / 负 −{l}', ptsTitle: '本局分数', resetScores: '重置积分', resetConfirm: '将所有人的积分归零？', scoreNote: '越不被看好的一方，获胜得分越高。积分不会低于0。',
+    addCpu: '添加电脑玩家', ageTitle: '未满18岁禁止', ageBody: '本游戏包含流血、残酷画面及巨大声响。你已年满18岁吗？', ageYes: '我已年满18岁', ageNo: '否（不显示残酷画面）', optGore: '残酷画面', scoreboard: '积分排名', roundN: '第{n}局结束', pt: '{n}分', ptsLine: '胜 +{w} / 负 −{l}', ptsTitle: '本局分数', resetScores: '重置积分', resetConfirm: '将所有人的积分归零？', scoreNote: '越不被看好的一方，获胜得分越高。积分不会低于0。',
     rolesInGame: '本局角色', ability: '能力',
     roles: {
       villager: ['村民', '没有特殊能力，靠讨论和投票揪出狼人。', '无能力。夜晚只需选择一个可疑的人（用于隐藏身份）。'],

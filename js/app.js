@@ -49,7 +49,6 @@ const joinUrl = () => {
 /* ---------- 起動 ---------- */
 async function boot() {
   setLang(detectLang());
-  try { if (!localStorage.getItem('mj-age') && !AUTO && !DEMO) app.ui.modal = 'age'; } catch {}
   const unlock = () => sound.unlock();
   document.addEventListener('pointerdown', unlock, { capture: true });
   document.addEventListener('keydown', unlock, { capture: true });
@@ -136,8 +135,7 @@ function onUpdate() {
 }
 
 function goreOn(pub) {
-  let age = null; try { age = localStorage.getItem('mj-age'); } catch {}
-  return pub?.settings?.gore !== false && age === 'yes';
+  return pub?.settings?.gore !== false;
 }
 function handleAnim(pub) {
   fx.setGore(goreOn(pub));
