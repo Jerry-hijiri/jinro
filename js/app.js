@@ -151,6 +151,41 @@ function onUpdate() {
     setBgm(pub);
   }
   render();
+  checkLove();
+}
+
+// 恋人に選ばれたことを、本人のスマホにだけ大きく知らせる（1試合1回）
+let loveTimer = null;
+function loveKey() {
+  const pub = app.client.pub, priv = app.client.priv;
+  return 'mj-love-' + app.room + '-' + (pub?.round || 0) + '-' + priv?.lover;
+}
+function checkLove() {
+  const pub = app.client.pub, priv = app.client.priv;
+  if (!pub || !priv?.lover || app.ui.modal || ['lobby', 'end', 'role', 'intro'].includes(pub.phase)) return;
+  let seen = false;
+  try { seen = (MODE === 'bc' ? sessionStorage : localStorage).getItem(loveKey()) === '1'; } catch {}
+  if (seen) return;
+  if (fx.busy()) { clearTimeout(loveTimer); loveTimer = setTimeout(checkLove, 800); return; }
+  app.ui.modal = 'love';
+  sound.sfxPlay('heartbeat');
+  try { navigator.vibrate?.([120, 80, 120]); } catch {}
+  renderHeader();
+}
+function loveModal() {
+  const priv = app.client.priv;
+  const mate = esc(nameOf(priv.lover));
+  const amCupid = priv.role === 'cupid';
+  return `<div class="modal-bg love-bg"></div>
+  <div class="modal card love-modal" role="dialog" aria-modal="true"><div class="modal-body">
+    <div class="love-heart">${roleIcon('cupid', 96)}</div>
+    <p class="love-kicker">${esc(t(amCupid ? 'loveKickerCupid' : 'loveKicker'))}</p>
+    <h2 class="love-title">${esc(t('loveTitle'))}</h2>
+    <p class="love-with">${esc(t('loveWith'))}</p>
+    <div class="love-name">${mate}</div>
+    <ul class="love-rules"><li>${esc(t('loveRule1', { name: nameOf(priv.lover) }))}</li><li>${esc(t('loveRule2'))}</li><li>${esc(t('loveRule3'))}</li></ul>
+    <button class="btn primary big" data-act="closeLove">${esc(t('loveOk'))}</button>
+  </div></div>`;
 }
 
 function goreOn(pub) {
@@ -235,7 +270,7 @@ function renderHeader() {
     ${app.ui.sound ? soundPanel() : ''}`;
   if (h._html !== html) { h.innerHTML = html; h._html = html; }
   const m = $('#modal');
-  const mh = app.ui.modal === 'age' ? ageModal() : app.ui.modal === 'a2hs' ? a2hsModal() : app.ui.modal ? helpModal() : '';
+  const mh = app.ui.modal === 'love' ? (app.client?.priv?.lover ? loveModal() : '') : app.ui.modal === 'age' ? ageModal() : app.ui.modal === 'a2hs' ? a2hsModal() : app.ui.modal ? helpModal() : '';
   if (m._html !== mh) { m.innerHTML = mh; m._html = mh; m.hidden = !mh; }
 }
 
@@ -495,12 +530,12 @@ function playerLobby(pub, priv) {
 /* ---------- 参加者：ゲーム中 ---------- */
 function partnersHtml(priv) {
   const P = (ids) => ids.filter((id) => id !== app.client.pid).map((id) => esc(nameOf(id)));
-  if (priv.role === 'fanatic') { const x = (priv.wolves || []).map((id) => esc(nameOf(id))); return `<div class="partners"><span>${esc(t('partners_fanatic'))}</span><b>${x.join(' / ')}</b></div>`; }
-  if (priv.role === 'werewolf') { const x = P(priv.wolves || []); return `<div class="partners"><span>${esc(t('partners_wolf'))}</span><b>${x.length ? x.join(' / ') : esc(t('noPartner'))}</b></div>`; }
+  const chips = (x) => x.map((n) => `<i class="pchip">${n}</i>`).join('');
+  if (priv.role === 'fanatic') { const x = (priv.wolves || []).map((id) => esc(nameOf(id))); return `<div class="partners wolfish"><span>${esc(t('partners_fanatic'))}</span><b>${chips(x)}</b></div>`; }
+  if (priv.role === 'werewolf') { const x = P(priv.wolves || []); return `<div class="partners wolfish"><span>${esc(t('partners_wolf'))}</span><b>${x.length ? chips(x) : esc(t('noPartner'))}</b></div>`; }
   let h = '';
-  if (priv.role === 'mason') { const x = P(priv.masons || []); h += `<div class="partners"><span>${esc(t('partners_mason'))}</span><b>${x.length ? x.join(' / ') : esc(t('noPartner'))}</b></div>`; }
-  if (priv.role === 'cupid' && priv.lovers) h += `<div class="partners lover"><span>${esc(t('loversAre'))}</span><b>${priv.lovers.map((id) => esc(nameOf(id))).join(' ＆ ')}</b></div>`;
-  if (priv.lover) h += `<div class="partners lover"><span>${esc(t('yourLover'))}</span><b>${esc(nameOf(priv.lover))}</b></div>`;
+  if (priv.role === 'mason') { const x = P(priv.masons || []); h += `<div class="partners"><span>${esc(t('partners_mason'))}</span><b>${x.length ? chips(x) : esc(t('noPartner'))}</b></div>`; }
+  if (priv.lover) h += `<div class="partners lover"><span>${esc(t('yourLover'))}</span><b>${chips([esc(nameOf(priv.lover))])}</b></div>`;
   return h;
 }
 function roleArt(r, cls = '') {
@@ -518,12 +553,13 @@ function roleCardHtml(priv) {
 function roleDetailHtml(priv) {
   const r = priv.role;
   const team = ROLES[r].team;
+  const pt = partnersHtml(priv);
   return `<div class="rdetail">
+    ${pt ? `<div class="rd-partners">${pt}</div>` : ''}
     <div class="rd-h"><b>${esc(roleName(r))}</b><span class="team t-${team}">${esc(t('team_' + team))}</span></div>
     <p>${esc(roleShort(r))}</p>
     <p class="rc-ab"><span>${esc(t('ability'))}</span>${esc(roleAbility(r))}</p>
     <p class="rc-win">${esc(t('win_' + team))}</p>
-    ${partnersHtml(priv)}
   </div>`;
 }
 function notesHtml(priv) {
@@ -594,12 +630,6 @@ function roleReveal(pub, priv) {
   </section>`;
 }
 
-function cupidPick(pub, act) {
-  const m = (app.ui.multi || []).filter((id) => act.targets.includes(id));
-  const ok = m.length === 2;
-  return `${grid(pub.players.filter((p) => p.alive), { selectable: true, targets: act.targets, selectedList: m })}
-    <div class="sticky-act"><button class="btn primary big" data-act="doAct" ${ok ? '' : 'disabled'}>${ok ? `${esc(t('decide'))}：${m.map((id) => esc(nameOf(id))).join(' ＆ ')}` : esc(t('pick2', { n: 2 - m.length }))}</button></div>`;
-}
 // 夜の操作を決めた直後に、その人の画面にだけ出す結果
 function actResultHtml(priv) {
   const r = priv.actResult;
@@ -620,10 +650,21 @@ function hunterView(pub, priv) {
   if (!priv.shoot) return `<section class="narrow">${head}<div class="card msg"><p class="hunter-wait">${esc(t('hunterWait', { name: nameOf(pub.hunter) }))}</p></div>${grid(pub.players)}</section>`;
   const tg = priv.shoot.targets;
   return `<section class="narrow">${head}
+    ${nightInfo(priv)}
     <div class="card prompt-card"><p class="prompt">${esc(t('hunterPrompt'))}</p><p class="note">${esc(t('hunterNote'))}</p></div>
     ${grid(pub.players.filter((p) => p.alive), { selectable: true, targets: tg, selected: app.ui.sel })}
     <div class="sticky-act"><button class="btn danger big" data-act="doShoot" ${app.ui.sel && tg.includes(app.ui.sel) ? '' : 'disabled'}>${esc(t('shootBtn'))}${app.ui.sel ? `：${esc(nameOf(app.ui.sel))}` : ''}</button></div>
   </section>`;
+}
+// 夜の画面の上に、自分の役職と「知っている仲間」を大きく出す（夜は全員が自分のスマホを見ている）
+function nightInfo(priv) {
+  if (!priv.role) return '';
+  const r = priv.role, pt = partnersHtml(priv);
+  return `<div class="night-info t-${ROLES[r].team}">
+    <div class="ni-role">${roleIcon(r, 52)}<div><small>${esc(t('yourRole'))}</small><b>${esc(roleName(r))}</b></div></div>
+    <p class="ni-ab">${esc(roleShort(r))}</p>
+    ${pt ? `<div class="rd-partners">${pt}</div>` : ''}
+  </div>`;
 }
 function nightView(pub, priv) {
   const act = priv.act;
@@ -634,6 +675,7 @@ function nightView(pub, priv) {
   if (!act) return `<section class="narrow">${head}</section>`;
   if (priv.acted) {
     return `<section class="narrow">${head}
+      ${nightInfo(priv)}
       ${actResultHtml(priv)}
       <div class="card msg night-msg"><div class="zzz">☾</div><p><b>${esc(t('acted'))}</b>${priv.actTarget && !priv.actResult ? `：${esc([].concat(priv.actTarget).map(nameOf).join(' ＆ '))}` : ''}</p><p class="waiting">${esc(t('waitDawn', pr))}</p>${pack}</div>
       ${myPanel(priv)}</section>`;
@@ -642,7 +684,7 @@ function nightView(pub, priv) {
   const players = pub.players.filter((p) => p.alive || act.targets.includes(p.id));
   return `<section class="narrow">${head}
     <div class="card prompt-card"><p class="prompt">${esc(prompt)}</p>${act.kind === 'suspect' ? `<p class="note">${esc(t('act_suspectNote'))}</p>` : act.kind === 'cupid' ? `<p class="note">${esc(t('act_cupidNote'))}</p>` : ''}${pack}</div>
-    ${act.kind === 'cupid' ? cupidPick(pub, act) : `${grid(act.kind === 'medium' ? pub.players.filter((p) => act.targets.includes(p.id)) : players.filter((p) => p.alive), { selectable: true, targets: act.targets, selected: app.ui.sel })}
+    ${`${grid(act.kind === 'medium' ? pub.players.filter((p) => act.targets.includes(p.id)) : players.filter((p) => p.alive), { selectable: true, targets: act.targets, selected: app.ui.sel })}
     <div class="sticky-act"><button class="btn primary big" data-act="doAct" ${app.ui.sel && act.targets.includes(app.ui.sel) ? '' : 'disabled'}>${esc(t('decide'))}${app.ui.sel ? `：${esc(nameOf(app.ui.sel))}` : ''}</button></div>`}
     ${myPanel(priv)}
   </section>`;
@@ -727,6 +769,13 @@ function betCard(pub, priv) {
     <div class="bet-amt"><span>${esc(t('betAmount'))}</span><div class="stepper"><button data-act="betAmt" data-d="-5" ${amt <= 1 ? 'disabled' : ''}>−5</button><button data-act="betAmt" data-d="-1" ${amt <= 1 ? 'disabled' : ''}>−</button><span>${amt}</span><button data-act="betAmt" data-d="1" ${amt >= info.max ? 'disabled' : ''}>＋</button><button data-act="betAmt" data-d="5" ${amt >= info.max ? 'disabled' : ''}>+5</button></div><small>/ ${info.max}</small></div>
     <button class="btn primary big" data-act="placeBet" ${side ? '' : 'disabled'}>${esc(t('betPlace'))}${side ? `：${esc(t(SIDE_KEY[side]))} ${amt}${esc(t('ptUnit'))}` : ''}</button></div>`;
 }
+// 自分がなぜ死んだか（恋人の後追いは特に分かりにくいので理由を書く）
+function myDeath(pub, priv) {
+  const me = pub.players.find((p) => p.id === app.client.pid);
+  if (me?.death?.how !== 'love') return '';
+  const mate = priv.lover || (priv.allLovers || []).find((id) => id !== app.client.pid);
+  return `<p class="love-death">${esc(t('youFollowed', { name: mate ? nameOf(mate) : '?' }))}</p>`;
+}
 function spectator(pub, priv) {
   const ph = pub.phase;
   const pr = progress(pub);
@@ -735,7 +784,7 @@ function spectator(pub, priv) {
   else if (ph === 'vote') sub = t('votingN', pr);
   else if (ph === 'day') sub = t('discussion');
   return `<section class="narrow ghost-view">
-    <div class="card msg dead-msg"><div class="ghost-i">✝</div><h2>${esc(t('youDead'))}</h2><p>${esc(t('youDeadNote'))}</p><button class="btn poop-btn" data-act="poop">💩 ${esc(t('poopBtn'))}</button>${ph === 'day' ? '<div class="timer" data-deadline="1">--:--</div>' : ''}<p class="waiting">${esc(sub)}</p></div>
+    <div class="card msg dead-msg"><div class="ghost-i">✝</div><h2>${esc(t('youDead'))}</h2>${myDeath(pub, priv)}<p>${esc(t('youDeadNote'))}</p><button class="btn poop-btn" data-act="poop">💩 ${esc(t('poopBtn'))}</button>${ph === 'day' ? '<div class="timer" data-deadline="1">--:--</div>' : ''}<p class="waiting">${esc(sub)}</p></div>
     ${betCard(pub, priv)}
     ${ph === 'voteResult' || ph === 'execution' ? tallyHtml(pub) : ''}
     ${priv.allRoles ? `<h3 class="sec-h">${esc(t('spectator'))}</h3>` : ''}
@@ -902,7 +951,8 @@ const actions = {
   tab(el) { app.ui.tab = el.dataset.tab; renderHeader(); },
   ageYes() { try { localStorage.setItem('mj-age', 'yes'); } catch {} app.ui.modal = null; renderHeader(); sound.sfxPlay('confirm'); },
   ageNo() { try { localStorage.setItem('mj-age', 'no'); } catch {} app.ui.modal = null; renderHeader(); },
-  closeModal() { app.ui.modal = null; renderHeader(); },
+  closeModal() { if (app.ui.modal === 'love') return; app.ui.modal = null; renderHeader(); },
+  closeLove() { try { (MODE === 'bc' ? sessionStorage : localStorage).setItem(loveKey(), '1'); } catch {} app.ui.modal = null; renderHeader(); sound.sfxPlay('confirm'); },
   sound() { app.ui.sound = !app.ui.sound; renderHeader(); },
   async fullscreen() {
     const d = document, el = d.documentElement;
@@ -948,15 +998,10 @@ const actions = {
   },
   ready() { if (!app.ui.seen) return; app.client.send({ t: 'ready' }); sound.sfxPlay('confirm'); },
   pick(el) {
-    if (app.client.priv?.act?.kind === 'cupid' && app.client.pub?.phase === 'night') {
-      const m = app.ui.multi || (app.ui.multi = []);
-      const id = el.dataset.id; const i = m.indexOf(id);
-      if (i >= 0) m.splice(i, 1); else { if (m.length >= 2) m.shift(); m.push(id); }
-    } else app.ui.sel = el.dataset.id;
+    app.ui.sel = el.dataset.id;
     sound.sfxPlay('select'); render();
   },
   doAct() {
-    if (app.client.priv?.act?.kind === 'cupid') { if ((app.ui.multi || []).length !== 2) return; app.client.send({ t: 'act', targets: app.ui.multi }); app.ui.multi = []; sound.sfxPlay('confirm'); return; }
     if (!app.ui.sel) return; app.client.send({ t: 'act', target: app.ui.sel }); sound.sfxPlay('confirm');
   },
   doVote() { if (!app.ui.sel) return; app.client.send({ t: 'vote', target: app.ui.sel }); sound.sfxPlay('confirm'); },

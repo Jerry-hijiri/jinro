@@ -117,14 +117,8 @@ export class Engine {
         if (s.phase !== 'night' || !p || !p.alive || pid in s.acts) return;
         if (Date.now() - s.nightStart < 1500) return;
         const a = this.actFor(p);
-        if (a.kind === 'cupid') {
-          const tg = Array.isArray(msg.targets) ? [...new Set(msg.targets)] : [];
-          if (tg.length !== 2 || !tg.every((x) => a.targets.includes(x))) return;
-          s.acts[pid] = tg;
-        } else {
-          if (!a.targets.includes(msg.target)) return;
-          s.acts[pid] = msg.target;
-        }
+        if (!a.targets.includes(msg.target)) return;
+        s.acts[pid] = msg.target;
         this.instantResult(p, a.kind, s.acts[pid]);
         if (this.alive().every((x) => x.id in s.acts)) { this.resolveNight(); return; }
         break;
@@ -217,7 +211,6 @@ export class Engine {
           if (this.s.phase !== 'night') return;
           const a = this.actFor(b);
           if (!a.targets.length) return;
-          if (a.kind === 'cupid') { const sh = shuffle([...a.targets]); this.handle(b.id, { t: 'act', targets: sh.slice(0, 2) }); return; }
           let tg = pick(a.targets);
           if (r[b.id] === 'werewolf') {
             const mate = Object.entries(this.s.acts).find(([w, x]) => w !== b.id && r[w] === 'werewolf' && x);
@@ -403,7 +396,7 @@ export class Engine {
     const role = s.roles[p.id];
     const others = this.alive().filter((x) => x.id !== p.id).map((x) => x.id);
     if (role === 'werewolf') return { kind: s.day === 1 ? 'wolfFirst' : 'kill', targets: others.filter((id) => s.roles[id] !== 'werewolf') };
-    if (role === 'cupid' && s.day === 1) return { kind: 'cupid', targets: this.alive().map((x) => x.id) };
+    if (role === 'cupid' && s.day === 1) return { kind: 'cupid', targets: others };
     if (role === 'seer') return { kind: 'divine', targets: others };
     if (role === 'medium' && s.medNow) return { kind: 'medium', targets: [s.medNow.target] };
     if (role === 'knight' && s.day > 1) return { kind: 'guard', targets: others.filter((id) => s.settings.guardTwice || id !== s.lastGuard) };
@@ -468,7 +461,7 @@ export class Engine {
     }
     // キューピッド（初日の夜に恋人を決める）
     if (n === 1 && !s.lovers) {
-      for (const p of al) if (r[p.id] === 'cupid' && Array.isArray(s.acts[p.id])) s.lovers = s.acts[p.id];
+      for (const p of al) if (r[p.id] === 'cupid' && typeof s.acts[p.id] === 'string') s.lovers = [p.id, s.acts[p.id]];
     }
     for (const id of deaths) { const p = this.P(id); p.alive = false; p.death = { day: n, how: 'night' }; }
     // 恋人の後追い
@@ -628,7 +621,7 @@ export class Engine {
       if (!s.mediumLog.some((x) => x.day === s.medNow.day)) s.mediumLog.push(s.medNow);
       s.nightResult[p.id] = { kind, target: s.medNow.target, res: s.medNow.res };
     } else if (kind === 'cupid') {
-      s.nightResult[p.id] = { kind, targets: tg };
+      s.nightResult[p.id] = { kind, targets: [p.id, tg] };
     } else {
       s.nightResult[p.id] = { kind, target: tg };
     }
