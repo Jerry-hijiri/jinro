@@ -350,6 +350,7 @@ function homeView() {
       <p class="kicker">WEREWOLF · 人狼 · 늑대인간 · 狼人</p>
       <h1>${esc(t('appTitle'))}</h1>
       <p class="tagline">${esc(t('tagline'))}</p>
+      <p class="free-line">${esc(t('freeLine'))}</p>
       <div class="strip">${strip}</div>
     </div>
     <div class="card home-card">
@@ -362,6 +363,7 @@ function homeView() {
       </div>
       <p class="note">${esc(t('homeNote'))}</p>
     </div>
+    <div class="card pc-tip"><div class="pc-tip-ic" aria-hidden="true">🕯️</div><div><b>${esc(t('pcTipTitle'))}</b><p>${esc(t('pcTip'))}</p></div></div>
     ${statsCard()}
     <div class="guide-btns">
       <button class="btn ghost" data-act="help" data-tab="how">${esc(t('howTo'))}</button>

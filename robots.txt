@@ -1,0 +1,6 @@
+User-agent: *
+Allow: /
+Disallow: /demo.html
+Disallow: /movie/
+
+Sitemap: https://rousoku-jinro.uk/sitemap.xml

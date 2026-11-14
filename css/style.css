@@ -975,3 +975,8 @@ main, .top { position: relative; z-index: 1; }
 .gm-timer .timer.urgent { color: #ff6b5e; }
 .site-links{display:flex;flex-wrap:wrap;justify-content:center;gap:6px 18px;margin:20px 0 8px;font-size:13px}
 .site-links a{color:var(--muted,#a89a7c);text-decoration:none}.site-links a:hover{text-decoration:underline}
+.free-line{margin:6px 0 0;font-size:12px;letter-spacing:.2em;color:var(--muted,#a89a7c);opacity:.85}
+.pc-tip{display:flex;gap:14px;align-items:flex-start;text-align:left}
+.pc-tip b{color:var(--gold,#e8c872);font-family:'Shippori Mincho B1',serif;letter-spacing:.06em}
+.pc-tip p{margin:4px 0 0;font-size:14px;line-height:1.75;opacity:.9}
+.pc-tip-ic{font-size:26px;line-height:1;filter:saturate(.6) drop-shadow(0 0 8px rgba(232,170,80,.5))}
