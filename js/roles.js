@@ -129,3 +129,37 @@ export function points(cfg) {
   if (b.lovers) o.lovers = f(b.lovers);
   return o;
 }
+
+// 人数に合わせて、毎回ちがう「力関係がつり合った」構成を作る（直前と同じ構成は避ける）
+export function randomBalanced(nIn, prev = null, tries = 600) {
+  const n = Math.max(MIN_PLAYERS, Math.min(MAX_PLAYERS, nIn | 0));
+  const R = (a, b) => a + Math.floor(Math.random() * (b - a + 1));
+  const same = (a, b) => b && ROLE_ORDER.every((r) => (a[r] | 0) === (b[r] | 0));
+  const wolfRange = n <= 5 ? [1, 1] : n <= 7 ? [1, 2] : n <= 11 ? [2, 2] : n <= 15 ? [2, 3] : [3, 4];
+  const cands = [];
+  for (let i = 0; i < tries; i++) {
+    const c = full({});
+    c.werewolf = R(...wolfRange);
+    c.seer = 1;
+    let left = n - c.werewolf - 1;
+    const opt = [
+      ['medium', n >= 6 ? 0.6 : 0.15], ['knight', n >= 5 ? 0.65 : 0.3], ['baker', 0.3], ['hunter', n >= 6 ? 0.4 : 0.15],
+      ['madman', n >= 6 ? 0.5 : 0.15], ['fanatic', n >= 7 ? 0.35 : 0.1], ['fox', n >= 9 ? 0.35 : n >= 7 ? 0.12 : 0], ['cupid', n >= 6 ? 0.3 : 0],
+    ];
+    for (const [r, p] of opt.sort(() => Math.random() - 0.5)) {
+      if (left <= 1) break;
+      if (Math.random() < p) { c[r] = 1; left--; }
+    }
+    if (n >= 10 && left >= 3 && Math.random() < 0.35) { c.mason = 2; left -= 2; }
+    c.villager = left;
+    if (c.villager < 0 || validate(c, n).length) continue;
+    const b = balance(c);
+    if (!b) continue;
+    const gap = Math.abs(b.village - b.wolf);
+    cands.push({ c, gap, b });
+  }
+  cands.sort((a, b) => a.gap - b.gap);
+  const good = cands.filter((x) => x.b.label === 'even' && !same(x.c, prev)).slice(0, 25);
+  const pool = good.length ? good : cands.filter((x) => !same(x.c, prev)).slice(0, 5);
+  return (pool[Math.floor(Math.random() * pool.length)] || { c: recommend(n) }).c;
+}

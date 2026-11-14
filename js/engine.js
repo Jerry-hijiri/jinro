@@ -1,5 +1,5 @@
 // オーナーの端末で動く進行役（ゲームの正本）。参加者にはこの端末から状態を配る。
-import { ROLE_ORDER, ROLES, recommend, validate, full, points, balance, MAX_PLAYERS } from './roles.js';
+import { ROLE_ORDER, ROLES, recommend, randomBalanced, validate, full, points, balance, MAX_PLAYERS } from './roles.js';
 import { deriveKey, seal, unseal } from './net.js';
 
 export const T = { shot: 7000, hunter: 30000, intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 15000, nightMin: 4200 };
@@ -96,7 +96,7 @@ export class Engine {
         if (s.phase !== 'lobby') { this.cache.delete(pid); this.sendPriv(pid); return; }
         if (s.players.length >= MAX_PLAYERS) return;
         s.players.push({ id: pid, name: this.uniqueName(name, pid), alive: true, host: pid === this.localPid, owner: isOwner, death: null });
-        if (s.cfgAuto) s.cfg = recommend(s.players.length);
+        if (s.cfgAuto) s.cfg = randomBalanced(Math.max(4, s.players.length), s.cfg);
         break;
       }
       case 'host': {
@@ -172,7 +172,7 @@ export class Engine {
   removePlayer(pid) {
     const s = this.s;
     s.players = s.players.filter((x) => x.id !== pid);
-    if (s.cfgAuto) s.cfg = recommend(Math.max(4, s.players.length));
+    if (s.cfgAuto) s.cfg = randomBalanced(Math.max(4, s.players.length), s.cfg);
     this.cache.delete(pid);
   }
 
@@ -184,7 +184,7 @@ export class Engine {
     const used = new Set(s.players.map((p) => p.name));
     const base = NAMES.find((n) => !used.has('CPU ' + n)) || String(s.players.length + 1);
     s.players.push({ id: 'cpu_' + uid(), name: 'CPU ' + base, alive: true, host: false, bot: true, death: null });
-    if (s.cfgAuto) s.cfg = recommend(s.players.length);
+    if (s.cfgAuto) s.cfg = randomBalanced(Math.max(4, s.players.length), s.cfg);
     this.commit();
   }
 
@@ -262,7 +262,8 @@ export class Engine {
     this.commit();
   }
   applyRec() {
-    this.s.cfg = recommend(Math.max(4, this.s.players.length));
+    // 押すたびに、今の参加人数でつり合いの取れた構成をランダムに作る
+    this.s.cfg = randomBalanced(Math.max(4, this.s.players.length), this.s.cfg);
     this.s.cfgAuto = true;
     this.commit();
   }

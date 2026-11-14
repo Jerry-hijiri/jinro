@@ -942,3 +942,8 @@ main, .top { position: relative; z-index: 1; }
 .st-rows b { font-size: 16px; }
 .st-rows .lv b { color: #8fc46f; } .st-rows .lw b { color: #e3615a; } .st-rows .lo b { color: #6b9be6; }
 .stats-card .note { margin: 0; }
+
+/* 長押し・タップでの画像ドラッグや保存メニューを防ぐ */
+[data-hold] img, [data-toggle-card] img, .rcard img { -webkit-user-drag: none; user-drag: none; pointer-events: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
+.flip[data-toggle-card] { touch-action: manipulation; }
+.rdetail-wrap.show { max-height: 900px; }

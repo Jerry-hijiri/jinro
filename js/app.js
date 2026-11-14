@@ -66,7 +66,8 @@ async function boot() {
   document.addEventListener('pointerdown', onHoldStart);
   ['pointerup', 'pointercancel'].forEach((ev) => document.addEventListener(ev, onHoldEnd, true));
   window.addEventListener('blur', onHoldEnd);
-  document.addEventListener('contextmenu', (e) => { if (e.target.closest('[data-hold]')) e.preventDefault(); });
+  document.addEventListener('contextmenu', (e) => { if (e.target.closest('[data-hold],[data-toggle-card]')) e.preventDefault(); });
+  document.addEventListener('dragstart', (e) => { if (e.target.closest('[data-hold],[data-toggle-card]') || e.target.tagName === 'IMG') e.preventDefault(); });
   const host = params.get('host');
   const r = params.get('r');
   if (host) await startHost(host.toUpperCase());
@@ -143,7 +144,8 @@ function onUpdate() {
   const pub = app.client.pub;
   if (pub) {
     if (pub.phase !== lastPhase) {
-      if (pub.phase === 'role') app.ui.seen = false;
+      if (pub.phase === 'role') { app.ui.seen = false; app.ui.revealed = false; }
+      if (lastPhase === 'role') app.ui.revealed = false;
       app.ui.sel = null;
       lastPhase = pub.phase;
     }
@@ -503,8 +505,8 @@ function hostLobby(pub) {
     </div>
     <div class="col">
       <div class="card">
-        <div class="card-h"><h3>${esc(t('roleSetup'))}</h3><button class="btn sm ${pub.cfgAuto ? 'on' : ''}" data-act="rec">${pub.cfgAuto ? '✓ ' + esc(t('autoOn')) : esc(t('recommended'))}</button></div>
-        <p class="note rec-note">${esc(t('recFor', { n: Math.max(4, n) }))}：${ROLE_ORDER.filter((r) => recommend(n)[r]).map((r) => `${esc(roleName(r))}${recommend(n)[r]}`).join(' / ')}</p>
+        <div class="card-h"><h3>${esc(t('roleSetup'))}</h3><button class="btn sm ${pub.cfgAuto ? 'on' : ''}" data-act="rec">${esc(t(pub.cfgAuto ? 'autoOn' : 'recommended', { n: Math.max(4, n) }))}</button></div>
+        <p class="note rec-note">${esc(t('recFor', { n: Math.max(4, n) }))}</p>
         <div class="roles-edit">${rows}</div>
         <div class="total ${total(cfg) === n ? 'ok' : 'ng'}">${esc(t('totalLine', { a: total(cfg), n }))}</div>
         ${balanceMeter(cfg)}
@@ -539,7 +541,7 @@ function ownerLobbyCard(pub) {
   const errs = validate(pub.cfg, pub.players.length);
   return `<div class="card owner-card"><h3>${icon.crown} ${esc(t('hostPanel'))}</h3>
     ${errs.length ? `<ul class="errs">${errs.map(([k, v]) => `<li>${esc(t(k, v))}</li>`).join('')}</ul>` : ''}
-    <div class="row"><button class="btn sm ghost" data-act="rec">${esc(t('recommended'))}</button></div>
+    <div class="row"><button class="btn sm ghost" data-act="rec">${esc(t('recommended', { n: Math.max(4, pub.players.length) }))}</button></div>
     <button class="btn primary big start" data-act="start" ${errs.length ? 'disabled' : ''}>${esc(t('start'))}</button></div>`;
 }
 function playerLobby(pub, priv) {
@@ -650,11 +652,11 @@ function roleReveal(pub, priv) {
   if (!priv.role) return '';
   const ready = pub.players.filter((p) => p.done).length;
   return `<section class="narrow role-screen">
-    <div class="flip ${app.ui.holding ? 'show' : ''}" data-hold>
+    <div class="flip ${app.ui.revealed ? 'show' : ''}" data-toggle-card>
       <div class="face back"><div class="back-emblem"></div><b>${esc(t('holdToReveal'))}</b><small>${esc(t('holdHint'))}</small></div>
       <div class="face front">${roleCardHtml(priv)}</div>
     </div>
-    <div class="rdetail-wrap ${app.ui.holding ? 'show' : ''}">${roleDetailHtml(priv)}</div>
+    <div class="rdetail-wrap ${app.ui.revealed ? 'show' : ''}">${roleDetailHtml(priv)}</div>
     <button class="btn primary big" data-act="ready" ${!app.ui.seen || priv.ready ? 'disabled' : ''}>${priv.ready ? '✓ ' : ''}${esc(t('confirmed'))}</button>
     <p class="waiting">${esc(t('waitingOthers', { a: ready, b: pub.players.length }))}</p>
   </section>`;
@@ -680,7 +682,6 @@ function hunterView(pub, priv) {
   if (!priv.shoot) return `<section class="narrow">${head}<div class="card msg"><p class="hunter-wait">${esc(t('hunterWait', { name: nameOf(pub.hunter) }))}</p></div>${grid(pub.players)}</section>`;
   const tg = priv.shoot.targets;
   return `<section class="narrow">${head}
-    ${nightInfo(priv)}
     <div class="card prompt-card"><p class="prompt">${esc(t('hunterPrompt'))}</p><p class="note">${esc(t('hunterNote'))}</p></div>
     ${grid(pub.players.filter((p) => p.alive), { selectable: true, targets: tg, selected: app.ui.sel })}
     <div class="sticky-act"><button class="btn danger big" data-act="doShoot" ${app.ui.sel && tg.includes(app.ui.sel) ? '' : 'disabled'}>${esc(t('shootBtn'))}${app.ui.sel ? `：${esc(nameOf(app.ui.sel))}` : ''}</button></div>
@@ -713,6 +714,7 @@ function nightView(pub, priv) {
   const prompt = t('act_' + act.kind);
   const players = pub.players.filter((p) => p.alive || act.targets.includes(p.id));
   return `<section class="narrow">${head}
+    ${nightInfo(priv)}
     <div class="card prompt-card"><p class="prompt">${esc(prompt)}</p>${act.kind === 'suspect' ? `<p class="note">${esc(t('act_suspectNote'))}</p>` : act.kind === 'cupid' ? `<p class="note">${esc(t('act_cupidNote'))}</p>` : ''}${pack}</div>
     ${`${grid(act.kind === 'medium' ? pub.players.filter((p) => act.targets.includes(p.id)) : players.filter((p) => p.alive), { selectable: true, targets: act.targets, selected: app.ui.sel })}
     <div class="sticky-act"><button class="btn primary big" data-act="doAct" ${app.ui.sel && act.targets.includes(app.ui.sel) ? '' : 'disabled'}>${esc(t('decide'))}${app.ui.sel ? `：${esc(nameOf(app.ui.sel))}` : ''}</button></div>`}
@@ -914,7 +916,7 @@ function autoStep() {
   const me = pub.players.find((p) => p.id === c.pid);
   const ph = pub.phase;
   if (ph === 'role' && !priv.ready) {
-    if (!app.ui.seen && wait('hold', 1500)) { app.ui.holding = true; app.ui.seen = true; sound.sfxPlay('reveal'); render(); setTimeout(() => { app.ui.holding = false; render(); }, 3500); autoState.key = 'held'; autoState.at = Date.now() + 4500; }
+    if (!app.ui.seen && wait('hold', 1500)) { app.ui.revealed = true; app.ui.seen = true; sound.sfxPlay('reveal'); render(); setTimeout(() => { app.ui.revealed = false; render(); }, 3500); autoState.key = 'held'; autoState.at = Date.now() + 4500; }
     else if (app.ui.seen && autoState.key === 'held' && Date.now() >= autoState.at) actions.ready();
     return;
   }
@@ -935,6 +937,15 @@ function autoStep() {
 
 /* ---------- 操作 ---------- */
 function onHoldStart(e) {
+  // 役職確認のカードは長押しではなく「タップで開く／もう一度タップで閉じる」（長押しは画像のドラッグと誤認されるため）
+  const fl = e.target.closest('[data-toggle-card]');
+  if (fl) {
+    e.preventDefault();
+    app.ui.revealed = !app.ui.revealed;
+    if (app.ui.revealed && !app.ui.seen) { app.ui.seen = true; sound.sfxPlay('reveal'); } else sound.sfxPlay('click');
+    render();
+    return;
+  }
   const h = e.target.closest('[data-hold]');
   if (!h) return;
   e.preventDefault();
