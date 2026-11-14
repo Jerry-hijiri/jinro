@@ -80,7 +80,7 @@ async function boot() {
       <p class="note">音が出ます（タップで途中スキップ）</p></div></section>`;
     $('#pk').onclick = () => fx.morning(2, [{ id: 'x1', name: 'はなこ', color: '#5b9bd5' }]);
     $('#pe').onclick = () => fx.execution({ id: 'x2', name: 'たろう', color: '#c46aa8' }, false);
-    $('#pi').onclick = () => fx.intro();
+    $('#pi').onclick = () => fx.intro({ villager: 3, werewolf: 2, seer: 1, medium: 1, knight: 1, hunter: 1, cupid: 1 });
     renderHeader();
     return;
   }
@@ -242,7 +242,7 @@ function handleAnim(pub) {
   const age = (app.client.animAge || 0) + (Date.now() - app.client.recvAt);
   if (age > 15000) return;
   const P = (id) => { const p = pub.players.find((x) => x.id === id) || { id, name: '?' }; return { ...p, color: colorOf(p.id) }; };
-  if (a.kind === 'intro') fx.intro();
+  if (a.kind === 'intro') fx.intro(a.cfg || pub.cfg);
   else if (a.kind === 'night') fx.nightfall(a.day);
   else if (a.kind === 'morning') fx.morning(a.day, (a.deaths || []).map(P), a.bread);
   else if (a.kind === 'exec') fx.execution(P(a.victim), a.lot, a.follow ? P(a.follow) : null);

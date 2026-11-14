@@ -947,3 +947,23 @@ main, .top { position: relative; z-index: 1; }
 [data-hold] img, [data-toggle-card] img, .rcard img { -webkit-user-drag: none; user-drag: none; pointer-events: none; -webkit-touch-callout: none; user-select: none; -webkit-user-select: none; }
 .flip[data-toggle-card] { touch-action: manipulation; }
 .rdetail-wrap.show { max-height: 900px; }
+
+/* 開幕：映像の上に文字、最後に役職カード */
+.fx-intro .intro-v { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; }
+.intro-shade { position: absolute; inset: 0; background: radial-gradient(ellipse at 50% 50%, rgba(0,0,0,.15), rgba(0,0,0,.65) 80%); z-index: 1; }
+.fx-intro .intro-text { transition: opacity .8s ease; }
+.fx-intro.show-cards .intro-text { opacity: 0; }
+.intro-cards { position: absolute; inset: 0; z-index: 5; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 18px; padding: 24px 16px; background: rgba(0, 0, 0, .72); opacity: 0; transition: opacity .8s ease; pointer-events: none; }
+.fx-intro.show-cards .intro-cards { opacity: 1; }
+.ic-h { margin: 0; font-family: var(--serif); font-size: clamp(18px, 4.6vw, 28px); letter-spacing: .2em; color: #f3e2c0; text-shadow: 0 2px 12px #000; }
+.ic-grid { display: flex; flex-wrap: wrap; justify-content: center; gap: 12px; max-width: 980px; }
+.ic { display: grid; justify-items: center; gap: 6px; width: clamp(78px, 21vw, 130px); opacity: 0; transform: translateY(18px) scale(.9); }
+.fx-intro.show-cards .ic { animation: icIn .6s cubic-bezier(.2, 1.2, .4, 1) forwards; }
+.ic-art { position: relative; width: 100%; aspect-ratio: 5 / 7; border-radius: 8px; overflow: hidden; border: 3px solid var(--c-village); box-shadow: 0 6px 18px rgba(0, 0, 0, .7); }
+.ic-art.t-wolf { border-color: var(--c-wolf); } .ic-art.t-fox, .ic-art.t-lovers { border-color: var(--c-fox); }
+.ic-art img { width: 100%; height: 100%; object-fit: cover; display: block; }
+.ic-art b { position: absolute; right: 4px; bottom: 4px; background: rgba(0, 0, 0, .8); color: #fff3cf; font-size: 15px; padding: 1px 7px; border-radius: 6px; }
+.ic span { font-family: var(--serif); font-weight: 700; font-size: clamp(12px, 3.2vw, 16px); color: #f3e2c0; text-align: center; }
+@keyframes icIn { to { opacity: 1; transform: none; } }
+.fx-intro .intro-v { object-position: 30% 50%; }
+@media (max-aspect-ratio: 1/1) { .fx-intro .intro-v { object-position: 14% 50%; } }

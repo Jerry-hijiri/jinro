@@ -1,7 +1,8 @@
 // 演出（開幕・夜・朝・襲撃・処刑・勝敗）。全端末で同時に再生される。
-import { t, joinNames } from './i18n.js';
+import { t, joinNames, roleName } from './i18n.js';
 import { sound } from './audio.js';
-import { roleIcon } from './roles.js';
+import { roleIcon, ROLES } from './roles.js';
+const ROLE_TEAM = (r) => ROLES[r]?.team || 'village';
 
 const esc = (s) => String(s).replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
 
@@ -64,21 +65,31 @@ function mount(cls, html, ms, { skippable = true } = {}) {
   });
 }
 
-export function intro() {
-  const p = mount('fx-intro', `
-    <div class="sky"></div>${stars(120)}
-    <div class="moon big"><span></span></div>
-    <div class="fog f1"></div><div class="fog f2"></div>
-    ${village(true)}
+// 開幕：映像（img/video/intro.mp4 があれば）＋文字の演出 → 最後にこの試合で使う役職のカードだけを並べる
+export function intro(cfg = null) {
+  const roles = cfg ? Object.entries(cfg).filter(([, v]) => v > 0) : [];
+  const vid = VIDEOS.introOk;
+  const bg = vid
+    ? `<video class="fxv intro-v" src="img/video/intro.mp4" playsinline muted preload="auto"></video><div class="intro-shade"></div>`
+    : `<div class="sky"></div>${stars(120)}<div class="moon big"><span></span></div><div class="fog f1"></div><div class="fog f2"></div>${village(true)}`;
+  const cards = roles.length ? `<div class="intro-cards">
+      <p class="ic-h">${esc(t('introRoles'))}</p>
+      <div class="ic-grid">${roles.map(([r, v], i) => `<div class="ic" style="animation-delay:${0.25 + i * 0.18}s"><div class="ic-art t-${ROLE_TEAM(r)}"><img src="img/roles/${r}.webp" alt="">${v > 1 ? `<b>×${v}</b>` : ''}</div><span>${esc(roleName(r))}</span></div>`).join('')}</div>
+    </div>` : '';
+  const total = roles.length ? 9800 + 1200 + roles.length * 180 + 3200 : 9600;
+  const p = mount('fx-intro', `${bg}
     <div class="intro-text">
       <p class="l1">${esc(t('intro1'))}</p>
       <h1>${esc(t('appTitle'))}</h1>
       <p class="l2">${esc(t('intro2'))}</p>
-    </div>`, 9600);
+    </div>${cards}`, total);
   const c = mount.last;
+  const v = c.el.querySelector('video');
+  if (v) v.play().catch(() => {});
   sound.play('night');
   c.at(3600, () => sound.sfxPlay('howl'));
   c.at(5000, () => sound.sfxPlay('impact'));
+  if (roles.length) c.at(9800, () => { c.el.classList.add('show-cards'); sound.sfxPlay('reveal'); });
   return p;
 }
 
@@ -103,7 +114,7 @@ let gore = true;
 export function setGore(v) { gore = !!v; }
 // Geminiなどで作った動画（img/video/kill.mp4・exec.mp4）があれば最優先で使う
 const VIDEOS = {};
-['kill', 'exec'].forEach((n) => {
+['kill', 'exec', 'intro'].forEach((n) => {
   VIDEOS[n] = fetch(`img/video/${n}.mp4`, { method: 'HEAD' }).then((r) => {
     if (!r.ok) return false;
     const v = document.createElement('video'); v.preload = 'auto'; v.muted = true; v.src = `img/video/${n}.mp4`; v.load();

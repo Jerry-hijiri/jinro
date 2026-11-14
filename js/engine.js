@@ -2,7 +2,7 @@
 import { ROLE_ORDER, ROLES, recommend, randomBalanced, validate, full, points, balance, MAX_PLAYERS } from './roles.js';
 import { deriveKey, seal, unseal } from './net.js';
 
-export const T = { shot: 7000, hunter: 30000, intro: 10000, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 15000, nightMin: 4200 };
+export const T = { shot: 7000, hunter: 30000, intro: 16500, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 15000, nightMin: 4200 };
 
 const shuffle = (a) => { for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; } return a; };
 const pick = (a) => a[Math.floor(Math.random() * a.length)];
@@ -288,7 +288,7 @@ export class Engine {
     s.odds = balance(s.cfg);
     s.gameId = this.room + '-' + Date.now().toString(36); s.reported = false;
     s.bets = {};
-    this.anim('intro');
+    this.anim('intro', { cfg: s.cfg });
     this.arm(T.intro, 'toRole');
     this.commit();
     return true;
