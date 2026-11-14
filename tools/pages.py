@@ -8,7 +8,7 @@ const m=await import('./js/i18n.js'); const R=await import('./js/roles.js'); m.s
 console.log(JSON.stringify({roles:Object.keys(R.ROLES).map(r=>[r,R.ROLES[r].team,m.roleName(r),m.roleShort(r),m.roleAbility(r)]),steps:m.list('howSteps')}));
 """
 d = json.loads(subprocess.check_output(['node', '--input-type=module', '-e', js]))
-TEAM = {'village': '市民陣営', 'wolf': '人狼陣営', 'fox': '妖狐', 'lovers': '恋人'}
+TEAM = {'village': '市民陣営', 'wolf': '人狼陣営', 'fox': '妖狐陣営', 'lovers': '恋人', 'vampire': 'ヴァンパイア陣営', 'cult': 'カルト陣営'}
 CSS = """:root{--bg:#050403;--fg:#e8dcc0;--mut:#a89a7c;--gold:#e8c872;--line:#2a241b;--card:#0e0b08}
 *{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:16px/1.85 'Zen Kaku Gothic New',system-ui,sans-serif}
 main{max-width:760px;margin:0 auto;padding:32px 16px 64px}a{color:var(--gold)}
@@ -34,13 +34,13 @@ def page(path, title, desc, body):
 e = html.escape
 steps = ''.join(f'<h3>{i+1}. {e(a)}</h3><p>{e(b)}</p>' for i, (a, b) in enumerate(d['steps']))
 roles = ''.join(f'<div class="role"><img src="/img/roles/{r}.webp" alt="{e(n)}" loading="lazy" onerror="this.remove()"><div><b>{e(n)}</b><span class="tag">{TEAM.get(t,t)}</span><br><span class="mut">{e(s)}</span><p style="margin:4px 0 0">{e(a)}</p></div></div>' for r, t, n, s, a in d['roles'])
-page('about', '遊び方と役職', '完全無料・登録不要でスマホで遊べる対面人狼ゲーム「蝋燭人狼」の遊び方・12役職の説明・勝利条件。', f"""
+page('about', '遊び方と役職', '完全無料・登録不要でスマホで遊べる対面人狼ゲーム「蝋燭人狼」の遊び方・25役職の説明・勝利条件。', f"""
 <h1>蝋燭人狼の遊び方</h1><p>蝋燭人狼は、同じ場所に集まった4〜20人が、それぞれのスマホで遊ぶ人狼ゲームです。アプリのインストールも会員登録も要りません。オーナーが部屋を作り、画面のQRコードを読み取るだけで参加できます。司会（ゲームマスター）の進行はアプリが代わりに行うので、全員がプレイヤーとして遊べます。</p>
 <p>日本語・English・한국어・中文に対応しているので、言葉の違う友達とも同じ部屋で遊べます。</p><p><b>完全無料</b>です。料金・課金・会員登録は一切ありません。</p><h2>おすすめの遊び方</h2><p>スマホだけでも遊べますが、PCやタブレットで部屋を作り、机の真ん中に置くのがおすすめです。その画面が「みんなで見る大画面」になり、夜の演出・朝の発表・議論の残り時間・投票の結果を全員で見られます。ろうそくを囲むように、画面を囲んで遊んでください。</p>
 <a class="cta" href="/">今すぐ部屋を作る</a>
 <h2>ゲームの流れ</h2>{steps}
 <h2>役職一覧</h2><p>参加人数に合わせて、オーナーが役職を選びます。「自動で組む」を押すと、人数に合わせて市民側と人狼側の力がつり合う組み合わせを毎回ランダムに作ります。</p>{roles}
-<h2>勝利条件</h2><ul><li><b>市民陣営</b>：人狼を全員処刑する</li><li><b>人狼陣営</b>：生きている人狼の数が、それ以外の人の数と同じかそれ以上になる</li><li><b>妖狐</b>：どちらかの陣営の勝利が決まった時点で生き残っている</li><li><b>恋人</b>：恋人の2人が最後まで生き残る（ほかの陣営より優先）</li></ul>
+<h2>勝利条件</h2><ul><li><b>市民陣営</b>：人狼を全員処刑する</li><li><b>人狼陣営</b>：生きている人狼の数が、それ以外の人の数と同じかそれ以上になる</li><li><b>妖狐</b>：どちらかの陣営の勝利が決まった時点で生き残っている</li><li><b>恋人</b>：恋人の2人が最後まで生き残る（ほかの陣営より優先）</li><li><b>ヴァンパイア陣営</b>：人狼が全滅し、残りの人数がヴァンパイア陣営以下になる（ドラキュラは生存者の過半数を吸血しても勝ち）</li><li><b>カルト陣営</b>：カルトリーダー以外の生きている全員を信者にする</li><li><b>サンタクロース</b>：生きている全員にプレゼントを配り終えて村を去れば、勝利が確定</li></ul>
 <h2>はじめて遊ぶときのコツ</h2><ul><li>最初は5〜7人、村人・人狼・占い師だけの少ない構成がおすすめです。</li><li>夜は全員がスマホを操作します。能力のない人も「怪しい人」を選ぶので、操作している様子から役職はばれません。</li><li>PCやタブレットを机の真ん中に置くと、議論の残り時間や投票の結果をみんなで見られます。</li><li>残酷な演出は設定で切り替えられます。</li></ul>
 <h2>よくある質問</h2><h3>料金はかかりますか？</h3><p>完全無料です。課金要素もありません。サーバー代は広告でまかなう予定です。</p><h3>個人情報は必要ですか？</h3><p>必要ありません。ゲーム内で使う名前はニックネームで構いません。詳しくは<a href="/privacy/">プライバシーポリシー</a>をご覧ください。</p><h3>オンラインで離れて遊べますか？</h3><p>通信は離れていても届きますが、話し合いは同じ場所で顔を合わせて行う前提で作っています。通話アプリと組み合わせれば離れていても遊べます。</p>
 """)

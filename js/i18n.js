@@ -278,6 +278,147 @@ const D = {
   },
 };
 
+// ---- 追加役職（2026-11-14）----
+const X = {
+  ja: {
+    roles: {
+      samurai: ['侍', '守った相手を襲った者と、刺し違える。', '2日目の夜から毎晩1人を守る（連続で同じ人も可）。守った相手が人狼などに襲われると、襲った者と侍が相打ちになり、2人とも無残な姿で発見される。守った人は助かる。'],
+      dictator: ['独裁者', '一度だけ、処刑する人を独断で決められる。', 'ゲーム中に一度だけ、昼の議論中か投票中にボタンを押して、処刑する人を独断で決められる。投票は行われず、すぐに処刑される（使うと全員に独裁者だと知られる）。'],
+      prince: ['プリンス', '一度だけ、処刑を免れる。', '処刑されることに決まっても、一度だけ免れる（全員にプリンスだと明かされる）。2回目は処刑される。'],
+      elder: ['老人', '寿命がある。人狼が減るほど短くなる。', '生きている人狼の数×2日目までしか生きられない。それを過ぎた朝に「老衰で死亡しました」と発表される。能力はない。'],
+      thief: ['怪盗', '初日の夜、誰かの役職を盗んで成り代わる。', '初日の夜に1人を選び、その人の役職を盗んで自分がその役職になる（新しい役職の夜の行動は翌夜から）。盗まれた人は村人になる。ただし人狼・狂信者・背徳者を盗むと、その人は死ぬ。怪盗は占い・霊媒で「人間」と出る。'],
+      dog: ['犬', '主人を守り、夜に噛みつく。占うと「人狼」。', '初日の夜に主人を1人選ぶ（必ず）。犬が生きている間、主人は人狼に襲われても死なない。2日目の夜から、選んだ1人を噛み殺せる（任意・騎士や侍の護衛は効かない）。占い・霊媒では「人狼」と出る。市民陣営。'],
+      santa: ['サンタクロース', '毎晩プレゼントを配り、配り終えたら村を去る。', '毎晩、まだ贈っていない1人にプレゼントを贈る。中身はランダム：毒5%（死亡）・中二病10%・玉手箱10%（老人になる）・侍10%・プリンス10%・占い師25%・パン屋20%・カルトリーダー10%。市民陣営の人は役職ごと変わり、人外は陣営を変えずに一部の効果だけ受け取る。生きている全員に贈り終えた翌朝に村を去り、勝利が確定する（その夜に守られていたら、さらに翌朝）。'],
+      chuuni: ['中二病', '名前だけ違う、能力のない村人。', '能力はない。毎朝「あまり俺に近づくなよ…力が制御できないんだ」と言いましょう。中二病設定です、お疲れ様です。'],
+      madsci: ['マッドサイエンティスト', '一度だけ死者を蘇らせ、狼の子分にする。', '人狼陣営（人狼が誰かは分からない）。ゲーム中の夜に一度だけ、死んだ人を1人蘇生できる。蘇った人は「狼の子分」になり、人狼陣営が勝てば勝ち。占い・霊媒では「人間」と出る。'],
+      immoral: ['背徳者', '妖狐を知る、妖狐陣営の人間。', '最初から妖狐が誰か分かる。妖狐が勝てば勝ち。妖狐がすべて死ぬと、後を追って死ぬ。占い・霊媒では「人間」と出る。'],
+      vampire: ['ヴァンパイア', '毎晩1人を襲う、第三の夜の住人。', 'ヴァンパイア陣営。2日目の夜から毎晩1人を選んで襲う（必ず・仲間とは別々に）。人狼や妖狐も死ぬが、護衛された人は死なない。人狼に襲われても死なない。仲間のヴァンパイアが分かる。人狼が全滅し、残りの人数がヴァンパイア陣営以下になれば勝ち。ドラキュラの勝利でも勝つ。'],
+      dracula: ['ドラキュラ', '吸血で村の過半数を支配すれば勝ち。', 'ヴァンパイア陣営。2日目の夜から毎晩1人を吸血する。生きている人の過半数を吸血したら勝ち（ヴァンパイアの勝利でも勝つ）。人狼系・吸血鬼・護衛された人への吸血は失敗する。成功・失敗は翌朝全員に知らされるが、吸われた本人は気づかない。人狼に襲われると死ぬ。占うと「ヴァンパイア」と出て、呪い殺される。'],
+      cult: ['カルトリーダー', '毎晩1人を信者にし、全員を信者にすれば単独勝利。', 'カルト陣営。毎晩1人を選んで信者にする（信者本人は気づかない）。カルトリーダー以外の生きている全員が信者になった時点で単独勝利。信者が誰かは自分だけが分かる。'],
+    },
+    k: {
+      team_fox: '妖狐陣営', foxSide: '妖狐陣営', team_vampire: 'ヴァンパイア陣営', team_cult: 'カルト陣営', vampireSide: 'ヴァンパイア', cultSide: 'カルト',
+      win_vampire: '人狼が全滅し、残りがヴァンパイア陣営以下になれば勝ち', win_cult: '生きている全員を信者にすれば単独勝利',
+      win_title_vampire: 'ヴァンパイアの勝利', win_sub_vampire: '夜はもう、明けない。', win_title_cult: 'カルトの勝利', win_sub_cult: '村はひとつの祈りに染まった。',
+      needFox: '背徳者は妖狐がいないと入れられません',
+      act_steal: '役職を盗む相手を選んでください', act_samurai: '今夜守る人を選んでください（襲われたら襲撃者と相打ち）', act_dogMaster: 'あなたの主人を選んでください（犬が生きている間、人狼に襲われません）', act_dogBite: '噛みつく相手を選んでください（噛まなくてもよい）', act_revive: '蘇らせる死者を選んでください（一度だけ・使わなくてもよい）', act_vampBite: '今夜襲う人を選んでください', act_drain: '今夜吸血する人を選んでください', act_convert: '信者にする人を選んでください', act_gift: 'プレゼントを贈る人を選んでください',
+      res_steal: 'この人の役職を盗みます', res_samurai: '今夜はこの人を守ります', res_dogMaster: 'あなたの主人', res_dogBite: '今夜噛みつく相手', res_revive: '今夜蘇らせる人', res_vampBite: '今夜襲う相手', res_drain: '今夜吸血する相手', res_convert: '信者にした', res_gift: 'プレゼントを贈った',
+      noneBtn: '今夜は使わない', noneChosen: '今夜は使いませんでした', stealWillBe: '盗むと、あなたは「{role}」になります',
+      partners_immoral: '妖狐はこの人', partners_vamp: '仲間のヴァンパイア', partners_drac: '仲間のドラキュラ', partners_cult: '信者', dogMasterIs: 'あなたの主人', giftedList: '贈った相手',
+      minionNote: 'あなたは蘇り、狼の子分になりました。人狼陣営が勝てば勝ちです', robbedNote: '怪盗に役職（{role}）を盗まれ、村人になりました', stoleNote: '役職を盗み、「{role}」になりました（夜の行動は今夜から）', origWas: '元の役職：{role}',
+      giftGot: 'サンタからのプレゼント：{gift}', gift_poison: '毒', gift_chuuni: '中二病', gift_elder: '玉手箱', gift_samurai: '侍', gift_prince: 'プリンス', gift_seer: '占い', gift_baker: 'パン屋', gift_cult: 'カルトリーダー',
+      lifespanNote: 'あなたの寿命：{n}日目まで（人狼が減ると縮む）', princeReady: '一度だけ処刑を免れられます', princeSpent: '処刑よけはもう使いました',
+      dictateBtn: '独裁者の権限を使う', dictatePrompt: '処刑する人を独断で選んでください（一度だけ）', dictateGo: '処刑を命じる', cancel: 'やめる',
+      dictatorDid: '独裁者 {name} の命令', princeSaved: '{name} はプリンスだった！ 一度だけ処刑を免れた',
+      oldDeath: '{name} は老衰で死亡しました', revivedLine: '{name} が蘇った…', drainOk: 'ドラキュラの吸血は成功した…', drainNg: 'ドラキュラの吸血は失敗した', santaLeftLine: 'サンタクロース {name} はプレゼントを配り終え、村を去った',
+      tag_old: '老衰', tag_immoral: '後追い', tag_santa: '旅立ち', resVampire: 'ヴァンパイア', minionMark: '狼の子分',
+    },
+  },
+  en: {
+    roles: {
+      samurai: ['Samurai', 'Trades their life for the attacker’s.', 'From night 2, protect one player each night (repeats allowed). If that player is attacked, the attacker and the Samurai kill each other and both are found dead; the protected player survives.'],
+      dictator: ['Dictator', 'Once, decides the execution alone.', 'Once per game, during the day or the vote, press the button and choose who is executed. No vote is held (everyone learns you are the Dictator).'],
+      prince: ['Prince', 'Escapes execution once.', 'If chosen for execution, survives once (revealed as the Prince to everyone). The second time, they are executed.'],
+      elder: ['Elder', 'Has a lifespan that shrinks as wolves die.', 'Lives only until day (living werewolves × 2). After that, the morning announces they died of old age. No ability.'],
+      thief: ['Thief', 'Steals someone’s role on the first night.', 'On night 1, choose a player and take their role (its night action starts the next night). The victim becomes a Villager — but stealing from a Werewolf, Fanatic or Immoralist kills them. The Thief reads as Human.'],
+      dog: ['Dog', 'Guards a master and bites at night. Reads as Werewolf.', 'On night 1, choose a master (required). While the Dog lives, the master cannot be killed by werewolves. From night 2 the Dog may bite one player to death (optional; Knight/Samurai protection does not work). Reads as Werewolf. Village team.'],
+      santa: ['Santa Claus', 'Hands out gifts each night, then leaves the village.', 'Each night, give a gift to someone you have not given to yet. Random contents: Poison 5% (dies), Chuunibyou 10%, Tamatebako 10% (becomes Elder), Samurai 10%, Prince 10%, Seer 25%, Baker 20%, Cult Leader 10%. Village players change role; others keep their team and get only some effects. The morning after gifting every living player, Santa leaves and is guaranteed a win (one day later if protected that night).'],
+      chuuni: ['Chuunibyou', 'A powerless villager with a cooler name.', 'No ability. Every morning, say: “Don’t get too close… I can’t control my power.”'],
+      madsci: ['Mad Scientist', 'Revives the dead once, as a wolf minion.', 'Werewolf team (does not know the wolves). Once per game at night, revive one dead player. They become a Wolf Minion and win with the werewolves. Reads as Human.'],
+      immoral: ['Immoralist', 'A human who serves the Fox.', 'Knows who the Fox is from the start. Wins if the Fox wins. Dies when every Fox is dead. Reads as Human.'],
+      vampire: ['Vampire', 'A third creature of the night that attacks each night.', 'Vampire team. From night 2, attack one player each night (required, separately from other vampires). Werewolves and foxes die too; protected players survive. Immune to werewolf attacks. Knows other vampires. Wins when all werewolves are dead and the rest are no more than the vampire team, or when the Dracula wins.'],
+      dracula: ['Dracula', 'Wins by draining a majority of the village.', 'Vampire team. From night 2, drain one player each night. Wins when a majority of living players are drained (or when the vampires win). Draining wolves, vampires or protected players fails. Success or failure is announced each morning; victims never notice. Dies to werewolf attacks. Reads as Vampire to the Seer and is cursed to death.'],
+      cult: ['Cult Leader', 'Converts one player a night; converts everyone to win alone.', 'Cult team. Each night, convert a player (they do not know). Wins alone once every living player other than Cult Leaders is a believer. Only you know who the believers are.'],
+    },
+    k: {
+      team_fox: 'Fox team', foxSide: 'Fox', team_vampire: 'Vampires', team_cult: 'Cult', vampireSide: 'Vampires', cultSide: 'Cult',
+      win_vampire: 'Win when the wolves are gone and the rest are no more than the vampire team', win_cult: 'Win alone by converting every living player',
+      win_title_vampire: 'The Vampires Win', win_sub_vampire: 'The night will never end.', win_title_cult: 'The Cult Wins', win_sub_cult: 'The whole village prays as one.',
+      needFox: 'The Immoralist needs a Fox in the game',
+      act_steal: 'Choose whose role to steal', act_samurai: 'Choose who to protect tonight (you trade lives with any attacker)', act_dogMaster: 'Choose your master (safe from werewolves while you live)', act_dogBite: 'Choose someone to bite (optional)', act_revive: 'Choose a dead player to revive (once, optional)', act_vampBite: 'Choose who to attack tonight', act_drain: 'Choose who to drain tonight', act_convert: 'Choose who to convert', act_gift: 'Choose who gets a gift',
+      res_steal: 'You will steal this role', res_samurai: 'You are protecting', res_dogMaster: 'Your master', res_dogBite: 'You will bite', res_revive: 'You will revive', res_vampBite: 'You will attack', res_drain: 'You will drain', res_convert: 'Converted', res_gift: 'Gift sent to',
+      noneBtn: 'Not tonight', noneChosen: 'You did nothing tonight', stealWillBe: 'You will become “{role}”',
+      partners_immoral: 'The Fox is', partners_vamp: 'Fellow vampires', partners_drac: 'Fellow Draculas', partners_cult: 'Believers', dogMasterIs: 'Your master', giftedList: 'Gifts given to',
+      minionNote: 'You were revived as a Wolf Minion. You win if the werewolves win', robbedNote: 'The Thief stole your role ({role}). You are now a Villager', stoleNote: 'You stole a role and are now “{role}” (night actions start tonight)', origWas: 'Original role: {role}',
+      giftGot: 'Gift from Santa: {gift}', gift_poison: 'Poison', gift_chuuni: 'Chuunibyou', gift_elder: 'Tamatebako', gift_samurai: 'Samurai', gift_prince: 'Prince', gift_seer: 'Seer', gift_baker: 'Baker', gift_cult: 'Cult Leader',
+      lifespanNote: 'Your lifespan: until day {n} (shrinks as wolves die)', princeReady: 'You can escape execution once', princeSpent: 'Your escape has been used',
+      dictateBtn: 'Use Dictator power', dictatePrompt: 'Choose who is executed (once per game)', dictateGo: 'Order execution', cancel: 'Cancel',
+      dictatorDid: 'By order of Dictator {name}', princeSaved: '{name} was the Prince and escaped execution once!',
+      oldDeath: '{name} died of old age', revivedLine: '{name} has risen from the dead…', drainOk: 'Dracula’s feeding succeeded…', drainNg: 'Dracula’s feeding failed', santaLeftLine: 'Santa Claus {name} finished giving gifts and left the village',
+      tag_old: 'Old age', tag_immoral: 'Followed', tag_santa: 'Departed', resVampire: 'a Vampire', minionMark: 'Wolf Minion',
+    },
+  },
+  ko: {
+    roles: {
+      samurai: ['무사', '지킨 상대를 노린 자와 함께 죽는다.', '둘째 날 밤부터 매일 밤 1명을 지킨다(연속 가능). 지킨 사람이 습격당하면 습격자와 무사가 함께 죽고, 지킨 사람은 산다.'],
+      dictator: ['독재자', '한 번, 처형할 사람을 혼자 정한다.', '게임 중 한 번, 낮 토론이나 투표 중에 버튼을 눌러 처형할 사람을 정한다. 투표 없이 바로 처형된다(사용하면 모두에게 독재자임이 알려진다).'],
+      prince: ['왕자', '한 번 처형을 면한다.', '처형이 정해져도 한 번은 면한다(모두에게 왕자임이 공개된다). 두 번째는 처형된다.'],
+      elder: ['노인', '수명이 있다. 늑대가 줄수록 짧아진다.', '살아 있는 늑대인간 수×2일째까지만 산다. 그 뒤 아침에 "노쇠로 사망"이 발표된다. 능력 없음.'],
+      thief: ['괴도', '첫날 밤 누군가의 직업을 훔친다.', '첫날 밤 1명을 골라 그 직업을 훔쳐 자신이 그 직업이 된다(밤 행동은 다음 밤부터). 빼앗긴 사람은 시민이 된다. 단, 늑대인간·광신자·배덕자를 훔치면 그 사람은 죽는다. 괴도는 점·영매에서 "인간".'],
+      dog: ['개', '주인을 지키고 밤에 문다. 점치면 "늑대인간".', '첫날 밤 주인을 1명 고른다(필수). 개가 살아 있는 동안 주인은 늑대에게 죽지 않는다. 둘째 날 밤부터 1명을 물어 죽일 수 있다(선택, 기사·무사의 호위 무효). 점·영매에서 "늑대인간". 시민 진영.'],
+      santa: ['산타클로스', '매일 밤 선물을 나눠 주고, 다 주면 마을을 떠난다.', '매일 밤 아직 주지 않은 1명에게 선물을 준다. 내용은 무작위: 독5%(사망)·중2병10%·옥손상자10%(노인이 됨)·무사10%·왕자10%·점술사25%·빵집20%·컬트 리더10%. 시민 진영은 직업이 바뀌고, 인외는 진영을 유지한 채 일부 효과만 받는다. 살아 있는 모두에게 준 다음 날 아침 마을을 떠나 승리가 확정된다(그 밤에 호위받았다면 하루 뒤).'],
+      chuuni: ['중2병', '이름만 다른, 능력 없는 시민.', '능력 없음. 매일 아침 "너무 가까이 오지 마… 힘이 제어되지 않아"라고 말하자.'],
+      madsci: ['매드 사이언티스트', '한 번 죽은 자를 되살려 늑대의 부하로 만든다.', '늑대 진영(늑대가 누군지는 모른다). 게임 중 밤에 한 번, 죽은 사람 1명을 되살린다. 되살아난 사람은 "늑대의 부하"가 되어 늑대 진영이 이기면 승리. 점·영매에서 "인간".'],
+      immoral: ['배덕자', '요호를 아는 요호 진영의 인간.', '처음부터 요호가 누군지 안다. 요호가 이기면 승리. 요호가 모두 죽으면 뒤따라 죽는다. 점·영매에서 "인간".'],
+      vampire: ['뱀파이어', '매일 밤 1명을 덮치는 제3의 밤의 존재.', '뱀파이어 진영. 둘째 날 밤부터 매일 밤 1명을 덮친다(필수, 동료와 따로). 늑대·요호도 죽지만 호위받은 사람은 죽지 않는다. 늑대의 습격으로 죽지 않는다. 동료 뱀파이어를 안다. 늑대가 전멸하고 남은 인원이 뱀파이어 진영 이하가 되면 승리. 드라큘라가 이겨도 승리.'],
+      dracula: ['드라큘라', '마을 과반수의 피를 빨면 승리.', '뱀파이어 진영. 둘째 날 밤부터 매일 밤 1명의 피를 빤다. 살아 있는 사람의 과반수를 빨면 승리(뱀파이어가 이겨도 승리). 늑대 계열·흡혈귀·호위받은 사람에게는 실패한다. 성공·실패는 다음 날 아침 모두에게 알려지지만, 빨린 본인은 모른다. 늑대에게 습격당하면 죽는다. 점치면 "뱀파이어"로 나오고 저주로 죽는다.'],
+      cult: ['컬트 리더', '매일 밤 1명을 신자로 만들어, 모두를 신자로 만들면 단독 승리.', '컬트 진영. 매일 밤 1명을 신자로 만든다(본인은 모른다). 컬트 리더 외 살아 있는 모두가 신자가 되면 단독 승리. 신자가 누군지는 자신만 안다.'],
+    },
+    k: {
+      team_fox: '요호 진영', foxSide: '요호', team_vampire: '뱀파이어 진영', team_cult: '컬트 진영', vampireSide: '뱀파이어', cultSide: '컬트',
+      win_vampire: '늑대가 전멸하고 남은 인원이 뱀파이어 진영 이하가 되면 승리', win_cult: '살아 있는 모두를 신자로 만들면 단독 승리',
+      win_title_vampire: '뱀파이어의 승리', win_sub_vampire: '밤은 이제 끝나지 않는다.', win_title_cult: '컬트의 승리', win_sub_cult: '마을은 하나의 기도로 물들었다.',
+      needFox: '배덕자는 요호가 있어야 넣을 수 있습니다',
+      act_steal: '직업을 훔칠 상대를 고르세요', act_samurai: '오늘 밤 지킬 사람을 고르세요(습격자와 함께 죽음)', act_dogMaster: '당신의 주인을 고르세요(개가 살아 있는 동안 늑대에게 죽지 않음)', act_dogBite: '물 상대를 고르세요(선택)', act_revive: '되살릴 죽은 사람을 고르세요(한 번, 선택)', act_vampBite: '오늘 밤 덮칠 사람을 고르세요', act_drain: '오늘 밤 피를 빨 사람을 고르세요', act_convert: '신자로 만들 사람을 고르세요', act_gift: '선물을 줄 사람을 고르세요',
+      res_steal: '이 사람의 직업을 훔칩니다', res_samurai: '오늘 밤 이 사람을 지킵니다', res_dogMaster: '당신의 주인', res_dogBite: '오늘 밤 물 상대', res_revive: '오늘 밤 되살릴 사람', res_vampBite: '오늘 밤 덮칠 상대', res_drain: '오늘 밤 피를 빨 상대', res_convert: '신자로 만들었다', res_gift: '선물을 주었다',
+      noneBtn: '오늘 밤은 쓰지 않음', noneChosen: '오늘 밤은 쓰지 않았습니다', stealWillBe: '훔치면 "{role}"이(가) 됩니다',
+      partners_immoral: '요호는 이 사람', partners_vamp: '동료 뱀파이어', partners_drac: '동료 드라큘라', partners_cult: '신자', dogMasterIs: '당신의 주인', giftedList: '선물한 상대',
+      minionNote: '되살아나 늑대의 부하가 되었습니다. 늑대 진영이 이기면 승리', robbedNote: '괴도에게 직업({role})을 빼앗겨 시민이 되었습니다', stoleNote: '직업을 훔쳐 "{role}"이(가) 되었습니다(밤 행동은 오늘 밤부터)', origWas: '원래 직업: {role}',
+      giftGot: '산타의 선물: {gift}', gift_poison: '독', gift_chuuni: '중2병', gift_elder: '옥손상자', gift_samurai: '무사', gift_prince: '왕자', gift_seer: '점', gift_baker: '빵집', gift_cult: '컬트 리더',
+      lifespanNote: '당신의 수명: {n}일째까지(늑대가 줄면 짧아짐)', princeReady: '한 번 처형을 면할 수 있습니다', princeSpent: '처형 면제는 이미 사용했습니다',
+      dictateBtn: '독재자의 권한 사용', dictatePrompt: '처형할 사람을 혼자 고르세요(한 번)', dictateGo: '처형 명령', cancel: '취소',
+      dictatorDid: '독재자 {name}의 명령', princeSaved: '{name}은(는) 왕자였다! 한 번 처형을 면했다',
+      oldDeath: '{name}이(가) 노쇠로 사망했습니다', revivedLine: '{name}이(가) 되살아났다…', drainOk: '드라큘라의 흡혈은 성공했다…', drainNg: '드라큘라의 흡혈은 실패했다', santaLeftLine: '산타클로스 {name}이(가) 선물을 다 나눠 주고 마을을 떠났다',
+      tag_old: '노쇠', tag_immoral: '뒤따름', tag_santa: '떠남', resVampire: '뱀파이어', minionMark: '늑대의 부하',
+    },
+  },
+  zh: {
+    roles: {
+      samurai: ['武士', '与袭击守护对象的人同归于尽。', '第二夜起每晚守护一人（可连续）。守护对象遭袭时，袭击者与武士同归于尽，守护对象存活。'],
+      dictator: ['独裁者', '一次，独断决定处决对象。', '游戏中一次，在白天讨论或投票时按下按钮，独断选出处决对象。不进行投票，立即处决（使用后所有人都会知道你是独裁者）。'],
+      prince: ['王子', '可免于处决一次。', '即使被决定处决，也可免于一次（向所有人公开王子身份）。第二次会被处决。'],
+      elder: ['老人', '有寿命，狼人越少越短。', '只能活到「存活狼人数×2」天。之后的早晨会宣布「因衰老死亡」。无能力。'],
+      thief: ['怪盗', '第一夜偷走某人的身份。', '第一夜选一人，偷走其身份成为该身份（夜间行动从下一夜开始）。被偷者变为村民。但偷狼人、狂信者、背德者时，对方会死亡。怪盗被查验为「好人」。'],
+      dog: ['狗', '守护主人，夜里咬人。查验为「狼人」。', '第一夜必须选一位主人。狗存活期间，主人不会被狼人杀死。第二夜起可选择咬死一人（可不咬，骑士和武士的守护无效）。查验与通灵为「狼人」。好人阵营。'],
+      santa: ['圣诞老人', '每晚送礼物，送完便离开村庄。', '每晚给尚未送过的一人送礼。内容随机：毒5%（死亡）、中二病10%、玉手箱10%（变为老人）、武士10%、王子10%、预言家25%、面包师20%、邪教领袖10%。好人阵营会连身份一起改变，非人类保持阵营只获得部分效果。给所有存活者送完后的次日早晨离开村庄，确定获胜（当晚被守护则再晚一天）。'],
+      chuuni: ['中二病', '只有名字不同、没有能力的村民。', '没有能力。每天早上说：「别靠近我……我控制不住我的力量。」'],
+      madsci: ['疯狂科学家', '一次复活死者，使其成为狼的手下。', '狼人阵营（不知道狼人是谁）。游戏中夜晚一次，可复活一名死者。复活者成为「狼的手下」，狼人阵营获胜即获胜。查验为「好人」。'],
+      immoral: ['背德者', '知道妖狐的妖狐阵营人类。', '一开始就知道妖狐是谁。妖狐获胜即获胜。妖狐全部死亡时随之殉死。查验为「好人」。'],
+      vampire: ['吸血鬼', '每晚袭击一人的第三方夜行者。', '吸血鬼阵营。第二夜起每晚必须袭击一人（与同伴分开）。狼人和妖狐也会死，被守护者不会死。不会被狼人杀死。知道同伴吸血鬼。狼人全灭且剩余人数不超过吸血鬼阵营时获胜。德古拉获胜时也获胜。'],
+      dracula: ['德古拉', '吸取村中过半数人的血即获胜。', '吸血鬼阵营。第二夜起每晚吸一人的血。吸过存活者过半数即获胜（吸血鬼获胜时也获胜）。对狼人系、吸血鬼、被守护者吸血会失败。成败次日早晨公开，被吸者本人不知道。会被狼人杀死。被查验为「吸血鬼」并被咒杀。'],
+      cult: ['邪教领袖', '每晚发展一名信徒，全员入教即单独获胜。', '邪教阵营。每晚选一人成为信徒（本人不知道）。除领袖外所有存活者都成为信徒时单独获胜。只有你知道谁是信徒。'],
+    },
+    k: {
+      team_fox: '妖狐阵营', foxSide: '妖狐', team_vampire: '吸血鬼阵营', team_cult: '邪教阵营', vampireSide: '吸血鬼', cultSide: '邪教',
+      win_vampire: '狼人全灭且剩余人数不超过吸血鬼阵营即获胜', win_cult: '让所有存活者入教即单独获胜',
+      win_title_vampire: '吸血鬼获胜', win_sub_vampire: '黑夜将永不结束。', win_title_cult: '邪教获胜', win_sub_cult: '整个村庄都在同一个祈祷中。',
+      needFox: '没有妖狐时不能加入背德者',
+      act_steal: '选择要偷取身份的人', act_samurai: '选择今晚守护的人（遭袭时与袭击者同归于尽）', act_dogMaster: '选择你的主人（狗存活期间不会被狼人杀死）', act_dogBite: '选择要咬的人（可不咬）', act_revive: '选择要复活的死者（一次，可不用）', act_vampBite: '选择今晚袭击的人', act_drain: '选择今晚吸血的人', act_convert: '选择要发展为信徒的人', act_gift: '选择送礼物的人',
+      res_steal: '将偷取此人的身份', res_samurai: '今晚守护此人', res_dogMaster: '你的主人', res_dogBite: '今晚要咬的人', res_revive: '今晚复活的人', res_vampBite: '今晚袭击的人', res_drain: '今晚吸血的人', res_convert: '已发展为信徒', res_gift: '已送出礼物',
+      noneBtn: '今晚不使用', noneChosen: '今晚没有使用', stealWillBe: '偷取后你将成为「{role}」',
+      partners_immoral: '妖狐是', partners_vamp: '吸血鬼同伴', partners_drac: '德古拉同伴', partners_cult: '信徒', dogMasterIs: '你的主人', giftedList: '已送礼的人',
+      minionNote: '你被复活，成为狼的手下。狼人阵营获胜即获胜', robbedNote: '你的身份（{role}）被怪盗偷走，成为了村民', stoleNote: '你偷取了身份，成为「{role}」（夜间行动从今晚开始）', origWas: '原身份：{role}',
+      giftGot: '圣诞老人的礼物：{gift}', gift_poison: '毒', gift_chuuni: '中二病', gift_elder: '玉手箱', gift_samurai: '武士', gift_prince: '王子', gift_seer: '查验', gift_baker: '面包师', gift_cult: '邪教领袖',
+      lifespanNote: '你的寿命：到第{n}天（狼人减少会缩短）', princeReady: '可以免于处决一次', princeSpent: '免死机会已用完',
+      dictateBtn: '使用独裁者权力', dictatePrompt: '独断选出处决对象（一次）', dictateGo: '下令处决', cancel: '取消',
+      dictatorDid: '独裁者 {name} 的命令', princeSaved: '{name} 是王子！免于处决一次',
+      oldDeath: '{name} 因衰老死亡', revivedLine: '{name} 复活了……', drainOk: '德古拉的吸血成功了……', drainNg: '德古拉的吸血失败了', santaLeftLine: '圣诞老人 {name} 送完礼物，离开了村庄',
+      tag_old: '衰老', tag_immoral: '殉死', tag_santa: '离去', resVampire: '吸血鬼', minionMark: '狼的手下',
+    },
+  },
+};
+for (const l of Object.keys(X)) { Object.assign(D[l], X[l].k); Object.assign(D[l].roles, X[l].roles); }
+
 let cur = 'ja';
 export function detectLang() {
   try { const s = localStorage.getItem('mj-lang'); if (s && D[s]) return s; } catch {}
@@ -299,7 +440,7 @@ export function t(key, vars) {
   if (typeof s === 'string' && vars) s = s.replace(/\{(\w+)\}/g, (_, k) => vars[k] ?? '');
   return s;
 }
-export const roleName = (r) => (D[cur].roles[r] || [r])[0];
+export const roleName = (r) => (D[cur].roles[r] || D.ja.roles[r] || [r])[0];
 export const roleShort = (r) => (D[cur].roles[r] || ['', ''])[1];
 export const roleAbility = (r) => (D[cur].roles[r] || ['', '', ''])[2];
 export const list = (key) => D[cur][key] || D.ja[key] || [];

@@ -1,5 +1,9 @@
 // オーナーの端末で動く進行役（ゲームの正本）。参加者にはこの端末から状態を配る。
-import { ROLE_ORDER, ROLES, recommend, randomBalanced, validate, full, points, balance, MAX_PLAYERS } from './roles.js';
+import { ROLE_ORDER, ROLES, recommend, randomBalanced, validate, full, points, balance, seenAs, MAX_PLAYERS } from './roles.js';
+const NONE = '-';
+const VAMPS = ['vampire', 'dracula'];
+// サンタの贈り物（%）：毒・中二病・玉手箱(老人)・侍・プリンス・占い・パン屋・カルト
+const GIFTS = [['poison', 5], ['chuuni', 10], ['elder', 10], ['samurai', 10], ['prince', 10], ['seer', 25], ['baker', 20], ['cult', 10]];
 import { deriveKey, seal, unseal } from './net.js';
 
 export const T = { shot: 7000, hunter: 30000, intro: 16500, morning: 7500, morningDeath: 17500, voteResult: 7000, exec: 15000, nightMin: 4200 };
@@ -117,7 +121,7 @@ export class Engine {
         if (s.phase !== 'night' || !p || !p.alive || pid in s.acts) return;
         if (Date.now() - s.nightStart < 1500) return;
         const a = this.actFor(p);
-        if (!a.targets.includes(msg.target)) return;
+        if (!a.targets.includes(msg.target) && !(a.optional && msg.target === NONE)) return;
         s.acts[pid] = msg.target;
         this.instantResult(p, a.kind, s.acts[pid]);
         if (this.alive().every((x) => x.id in s.acts)) { this.resolveNight(); return; }
@@ -129,6 +133,17 @@ export class Engine {
         s.votes[pid] = msg.target;
         if (this.alive().every((x) => x.id in s.votes)) { this.tally(); return; }
         break;
+      }
+      case 'dictate': {
+        // 独裁者：昼（議論・投票中）に一度だけ、処刑する人を独断で決める
+        if (!['day', 'vote'].includes(s.phase) || !p?.alive || s.roles[pid] !== 'dictator' || s.dictUsed) return;
+        const tg = this.P(msg.target);
+        if (!tg?.alive || tg.id === pid) return;
+        s.dictUsed = true;
+        this.clearTimer();
+        s.voteResult = { votes: [], counts: {}, top: [tg.id], runoff: false, lot: false, victim: null, dictator: pid };
+        this.afterVoteResult();
+        return;
       }
       case 'shoot': {
         if (s.phase !== 'hunter' || s.hunter?.pid !== pid) return;
@@ -210,8 +225,9 @@ export class Engine {
         this.botLater(k(b.id), wait, () => {
           if (this.s.phase !== 'night') return;
           const a = this.actFor(b);
-          if (!a.targets.length) return;
-          let tg = pick(a.targets);
+          if (!a.targets.length && !a.optional) return;
+          let tg = a.targets.length ? pick(a.targets) : NONE;
+          if (a.optional && Math.random() < 0.4) tg = NONE;
           if (r[b.id] === 'werewolf') {
             const mate = Object.entries(this.s.acts).find(([w, x]) => w !== b.id && r[w] === 'werewolf' && x);
             if (mate && a.targets.includes(mate[1])) tg = mate[1];
@@ -283,6 +299,7 @@ export class Engine {
       day: 0, acts: {}, votes: {}, candidates: null, runoffDone: false, lastGuard: null,
       seerLog: {}, mediumLog: [], medPending: null, medNow: null, nightResult: {}, history: [], winner: null, lovers: null, bets: {}, fun: null, hunter: null, hunterUsed: [],
       ready: [], skip: [], voteResult: null, phase: 'intro',
+      dictUsed: false, princeUsed: [], dogMaster: {}, msUsed: [], minions: [], cult: [], bitten: [], gifted: {}, gifts: {}, santaLeft: [], santaDelay: {}, aged: [], princeGift: [], origRoles: { ...s.roles },
     });
     s.pts = points(s.cfg);
     s.odds = balance(s.cfg);
@@ -301,7 +318,7 @@ export class Engine {
     Object.assign(s, {
       phase: 'lobby', day: 0, roles: {}, acts: {}, votes: {}, candidates: null, runoffDone: false,
       lastGuard: null, seerLog: {}, mediumLog: [], medPending: null, winner: null, ready: [], skip: [],
-      voteResult: null, endsAt: null, next: null, anim: null, history: [], lovers: null,
+      voteResult: null, endsAt: null, next: null, anim: null, history: [], lovers: null, winners: null,
     });
     this.commit();
   }
@@ -321,9 +338,9 @@ export class Engine {
     const prevRank = this.ranks(ids, before);
     const deltas = {};
     for (const id of ids) {
-      const team = s.lovers?.includes(id) ? 'lovers' : ROLES[s.roles[id]]?.team;
+      const team = this.teamOf(id);
       if (!team || !pts?.[team]) { deltas[id] = 0; continue; }
-      const won = team === win;
+      const won = (s.winners || []).includes(id);
       const after = Math.max(0, before[id] + (won ? pts[team].win : -pts[team].lose));
       deltas[id] = after - before[id];
       s.scores[id] = after;
@@ -389,6 +406,7 @@ export class Engine {
       afterExec: () => this.afterExec(),
       hunterTimeout: () => this.shoot(null),
       afterShot: () => this.afterShot(),
+      princeSaved: () => { if (!this.checkWin()) this.startNight(this.s.day + 1); },
     }[name];
     if (f) f();
   }
@@ -397,12 +415,62 @@ export class Engine {
     const s = this.s;
     const role = s.roles[p.id];
     const others = this.alive().filter((x) => x.id !== p.id).map((x) => x.id);
+    const sus = { kind: 'suspect', targets: others };
     if (role === 'werewolf') return { kind: s.day === 1 ? 'wolfFirst' : 'kill', targets: others.filter((id) => s.roles[id] !== 'werewolf') };
     if (role === 'cupid' && s.day === 1) return { kind: 'cupid', targets: others };
+    if (role === 'thief' && s.day === 1) return { kind: 'steal', targets: others };
     if (role === 'seer') return { kind: 'divine', targets: others };
     if (role === 'medium' && s.medNow) return { kind: 'medium', targets: [s.medNow.target] };
     if (role === 'knight' && s.day > 1) return { kind: 'guard', targets: others.filter((id) => s.settings.guardTwice || id !== s.lastGuard) };
-    return { kind: 'suspect', targets: others };
+    if (role === 'samurai' && s.day > 1) return { kind: 'samurai', targets: others };
+    if (role === 'dog') {
+      if (!s.dogMaster?.[p.id]) return { kind: 'dogMaster', targets: others };
+      if (s.day > 1) return { kind: 'dogBite', targets: others, optional: true };
+    }
+    if (role === 'madsci' && !(s.msUsed || []).includes(p.id)) {
+      const dead = s.players.filter((x) => !x.alive && !(s.santaLeft || []).includes(x.id)).map((x) => x.id);
+      if (dead.length) return { kind: 'revive', targets: dead, optional: true };
+    }
+    if (role === 'vampire' && s.day > 1) return { kind: 'vampBite', targets: others.filter((id) => !VAMPS.includes(s.roles[id])) };
+    if (role === 'dracula' && s.day > 1) {
+      const t = others.filter((id) => s.roles[id] !== 'dracula' && !(s.bitten || []).includes(id));
+      if (t.length) return { kind: 'drain', targets: t };
+    }
+    if (role === 'cult') {
+      const t = others.filter((id) => s.roles[id] !== 'cult' && !(s.cult || []).includes(id));
+      if (t.length) return { kind: 'convert', targets: t };
+    }
+    if (role === 'santa') {
+      const t = others.filter((id) => !(s.gifted?.[p.id] || []).includes(id));
+      if (t.length) return { kind: 'gift', targets: t };
+    }
+    return sus;
+  }
+
+  // 死亡の処理（恋人の後追い・背徳者の後追いを連鎖させる）
+  kill(id, how, list) {
+    const p = this.P(id);
+    if (!p || !p.alive) return false;
+    p.alive = false; p.death = { day: this.s.day, how };
+    if (list && !list.includes(id)) list.push(id);
+    return true;
+  }
+  cascade(list) {
+    const s = this.s;
+    const extra = [];
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const id of [...list, ...extra]) {
+        const mate = this.loverOf(id);
+        if (mate && this.kill(mate, 'love')) { extra.push(mate); changed = true; }
+      }
+      const foxAlive = this.alive().some((x) => s.roles[x.id] === 'fox');
+      if (!foxAlive && s.players.some((x) => s.roles[x.id] === 'fox' || (s.origRoles || {})[x.id] === 'fox')) {
+        for (const x of this.alive()) if (s.roles[x.id] === 'immoral' && this.kill(x.id, 'immoral')) { extra.push(x.id); changed = true; }
+      }
+    }
+    return extra;
   }
 
   startNight(n) {
@@ -430,52 +498,119 @@ export class Engine {
     const n = s.day;
     const r = s.roles;
     const al = this.alive();
+    const r0 = { ...r }; // 夜の行動は、夜が始まった時点の役職で数える
+    const A = (role) => al.filter((p) => r0[p.id] === role && s.acts[p.id] && s.acts[p.id] !== NONE);
     const deaths = [];
-    // 占い
-    for (const p of al) {
-      if (r[p.id] !== 'seer') continue;
+    const note = { old: [], revived: [], drain: null, santaLeft: [], stolen: null };
+    // 怪盗（初日の夜）：盗んだ相手の役職になる。相手は村人に。人狼・狂信者・背徳者を盗むと相手は死ぬ
+    for (const p of A('thief')) {
+      if (n !== 1) continue;
+      const tg = s.acts[p.id], tr = r[tg];
+      r[p.id] = tr;
+      if (['werewolf', 'fanatic', 'immoral'].includes(tr)) this.kill(tg, 'night', deaths);
+      else r[tg] = 'villager';
+      s.stolen = { by: p.id, from: tg, role: tr };
+    }
+    // 犬：初日に主人を決める
+    for (const p of al) if (r0[p.id] === 'dog' && !s.dogMaster[p.id] && s.acts[p.id] && s.acts[p.id] !== NONE) s.dogMaster[p.id] = s.acts[p.id];
+    // 占い（妖狐・ドラキュラは呪殺）
+    for (const p of A('seer')) {
       const tg = s.acts[p.id];
-      if (!tg) continue;
-      if (!(s.seerLog[p.id] || []).some((x) => x.day === n)) (s.seerLog[p.id] ||= []).push({ day: n, target: tg, res: r[tg] === 'werewolf' ? 'wolf' : 'human' });
-      if (r[tg] === 'fox' && !deaths.includes(tg)) deaths.push(tg);
+      if (!(s.seerLog[p.id] || []).some((x) => x.day === n)) (s.seerLog[p.id] ||= []).push({ day: n, target: tg, res: seenAs(r[tg]) });
+      if (['fox', 'dracula'].includes(r[tg])) this.kill(tg, 'night', deaths);
     }
-    // 護衛
-    let guard = null;
+    // 護衛（騎士・侍）
+    const guards = new Set(), samurai = {};
     if (n > 1) {
-      for (const p of al) if (r[p.id] === 'knight' && s.acts[p.id]) guard = s.acts[p.id];
-      s.lastGuard = guard;
+      let lg = null;
+      for (const p of A('knight')) { guards.add(s.acts[p.id]); lg = s.acts[p.id]; }
+      s.lastGuard = lg;
+      for (const p of A('samurai')) { guards.add(s.acts[p.id]); samurai[s.acts[p.id]] = p.id; }
     }
-    // 襲撃（初日はなし）
+    const mastered = (id) => Object.entries(s.dogMaster).some(([d, m]) => m === id && this.P(d)?.alive);
+    // 守られた相手への襲撃：侍が守っていれば襲撃者と侍が相打ち
+    const attack = (tg, attackers, resist) => {
+      if (!tg || !this.P(tg)?.alive) return;
+      if (samurai[tg]) { const a = pick(attackers); this.kill(a, 'night', deaths); this.kill(samurai[tg], 'night', deaths); return; }
+      if (guards.has(tg) || resist(tg)) return;
+      this.kill(tg, 'night', deaths);
+    };
     if (n > 1) {
-      const wolves = al.filter((p) => r[p.id] === 'werewolf');
+      // 人狼の襲撃（妖狐・ヴァンパイアには効かない。犬の主人も犬が生きている間は守られる）
+      const wolves = al.filter((p) => r0[p.id] === 'werewolf' && this.P(p.id).alive);
       const tallies = {};
-      for (const w of wolves) { const tg = s.acts[w.id]; if (tg) tallies[tg] = (tallies[tg] || 0) + 1; }
+      for (const w of wolves) { const tg = s.acts[w.id]; if (tg && tg !== NONE) (tallies[tg] ||= []).push(w.id); }
       let target = null;
       const keys = Object.keys(tallies);
-      if (keys.length) {
-        const max = Math.max(...Object.values(tallies));
-        target = pick(keys.filter((k) => tallies[k] === max));
-      } else if (wolves.length) {
-        const cands = al.filter((p) => r[p.id] !== 'werewolf').map((p) => p.id);
-        target = cands.length ? pick(cands) : null;
+      if (keys.length) { const max = Math.max(...keys.map((k) => tallies[k].length)); target = pick(keys.filter((k) => tallies[k].length === max)); }
+      else if (wolves.length) { const c = al.filter((p) => r[p.id] !== 'werewolf').map((p) => p.id); target = c.length ? pick(c) : null; }
+      if (target) attack(target, tallies[target] || wolves.map((w) => w.id), (id) => ['fox', 'vampire'].includes(r[id]) || mastered(id));
+      // ヴァンパイア：それぞれが襲撃（護衛された相手は死なない。人狼・妖狐も死ぬ）
+      for (const p of A('vampire')) attack(s.acts[p.id], [p.id], () => false);
+      // 犬：任意で噛む（護衛は効かない）
+      for (const p of A('dog')) if (this.P(p.id)?.alive) this.kill(s.acts[p.id], 'night', deaths);
+      // ドラキュラ：指名からランダムで1人だけ吸血。人狼系・吸血鬼・護衛された人には失敗
+      const picks = A('dracula').map((p) => s.acts[p.id]);
+      if (picks.length) {
+        const tg = pick(picks);
+        const ok = this.P(tg)?.alive && !['werewolf', 'dog', 'vampire', 'dracula'].includes(r[tg]) && !guards.has(tg);
+        if (ok) s.bitten.push(tg);
+        note.drain = !!ok;
       }
-      if (target && target !== guard && r[target] !== 'fox' && !deaths.includes(target)) deaths.unshift(target);
     }
     // キューピッド（初日の夜に恋人を決める）
     if (n === 1 && !s.lovers) {
-      for (const p of al) if (r[p.id] === 'cupid' && typeof s.acts[p.id] === 'string') s.lovers = [p.id, s.acts[p.id]];
+      for (const p of al) if (r0[p.id] === 'cupid' && typeof s.acts[p.id] === 'string' && s.acts[p.id] !== NONE) s.lovers = [p.id, s.acts[p.id]];
     }
-    for (const id of deaths) { const p = this.P(id); p.alive = false; p.death = { day: n, how: 'night' }; }
-    // 恋人の後追い
-    for (const id of [...deaths]) {
-      const mate = this.loverOf(id);
-      if (mate && this.P(mate)?.alive) { const q = this.P(mate); q.alive = false; q.death = { day: n, how: 'love' }; deaths.push(mate); }
+    // カルトリーダー：信者を増やす
+    for (const p of A('cult')) if (this.P(s.acts[p.id])?.alive && !s.cult.includes(s.acts[p.id])) s.cult.push(s.acts[p.id]);
+    // マッドサイエンティスト：一度だけ死者を蘇生（狼の子分になる）
+    for (const p of A('madsci')) {
+      const q = this.P(s.acts[p.id]);
+      if (!q || q.alive || !this.P(p.id)?.alive) continue;
+      s.msUsed.push(p.id);
+      q.alive = true; q.death = null;
+      if (!s.minions.includes(q.id)) s.minions.push(q.id);
+      note.revived.push(q.id);
     }
+    // サンタ：贈り物（役職が変わる。毒は死亡）
+    for (const p of al) {
+      if (r0[p.id] !== 'santa' || !this.P(p.id)?.alive) continue;
+      const tg = s.acts[p.id];
+      if (tg && tg !== NONE && !(s.gifted[p.id] || []).includes(tg) && this.P(tg)) {
+        (s.gifted[p.id] ||= []).push(tg);
+        let roll = Math.random() * 100, g = GIFTS[GIFTS.length - 1][0];
+        for (const [k, w] of GIFTS) { if (roll < w) { g = k; break; } roll -= w; }
+        (s.gifts[tg] ||= []).push({ day: n, gift: g });
+        if (g === 'poison') this.kill(tg, 'night', deaths);
+        else if (!this.P(tg).alive) {}
+        else if (ROLES[r[tg]]?.team === 'village' && !(s.minions || []).includes(tg)) r[tg] = g; // 村人陣営は役職ごと変わる
+        else if (g === 'elder') s.aged.push(tg); // 人外は陣営を変えず、寿命・処刑よけだけ受け取る
+        else if (g === 'prince') s.princeGift.push(tg);
+      }
+    }
+    this.cascade(deaths);
+    // サンタ：生きている全員に贈り終えたら、翌朝に村を去る（その夜に守られていたら、さらに翌朝）
+    for (const p of this.alive()) {
+      if (r[p.id] !== 'santa') continue;
+      const left = this.alive().filter((x) => x.id !== p.id && !(s.gifted[p.id] || []).includes(x.id));
+      if (left.length) continue;
+      if (guards.has(p.id) && !s.santaDelay[p.id]) { s.santaDelay[p.id] = true; continue; }
+      p.alive = false; p.death = { day: n, how: 'santa' };
+      s.santaLeft.push(p.id); note.santaLeft.push(p.id);
+    }
+    // 老人：生きている人狼の数×2日目までしか生きられない
+    const wolvesAlive = this.alive().filter((x) => r[x.id] === 'werewolf').length;
+    for (const p of this.alive()) {
+      if ((r[p.id] === 'elder' || s.aged.includes(p.id)) && n > wolvesAlive * 2) { this.kill(p.id, 'old'); note.old.push(p.id); }
+    }
+    const oldFollow = this.cascade(note.old);
+    for (const id of oldFollow) if (!deaths.includes(id)) deaths.push(id);
     shuffle(deaths);
     // パン屋：生きていれば毎朝パンが届く
     const hasBaker = s.players.some((x) => r[x.id] === 'baker');
     const bread = hasBaker ? s.players.some((x) => r[x.id] === 'baker' && x.alive) : null;
-    s.history.push({ day: n, kind: 'night', deaths: [...deaths], bread });
+    s.history.push({ day: n, kind: 'night', deaths: [...deaths], bread, ...note });
     s.phase = 'morning';
     s.acts = {};
     this.anim('morning', { day: n, deaths, bread });
@@ -505,9 +640,9 @@ export class Engine {
     this.clearTimer();
     let follow = null;
     if (target && this.P(target)?.alive) {
-      const q = this.P(target); q.alive = false; q.death = { day: s.day, how: 'hunter' };
-      const mate = this.loverOf(target);
-      if (mate && this.P(mate)?.alive) { const m = this.P(mate); m.alive = false; m.death = { day: s.day, how: 'love' }; follow = mate; }
+      this.kill(target, 'hunter');
+      const ex = this.cascade([target]);
+      follow = ex[0] || null;
     } else target = null;
     s.history.push({ day: s.day, kind: 'shot', by, victim: target, follow });
     s.hunter = null;
@@ -592,15 +727,21 @@ export class Engine {
     }
     const victim = vr.top.length > 1 ? pick(vr.top) : vr.top[0];
     vr.lot = vr.top.length > 1;
+    // プリンス：一度だけ処刑を免れる
+    if ((s.roles[victim] === 'prince' || (s.princeGift || []).includes(victim)) && !s.princeUsed.includes(victim)) {
+      s.princeUsed.push(victim);
+      vr.prince = victim;
+      s.history.push({ day: s.day, kind: 'exec', victim: null, prince: victim, dictator: vr.dictator || null });
+      s.phase = 'voteResult';
+      this.arm(T.voteResult, 'princeSaved');
+      this.commit();
+      return;
+    }
     vr.victim = victim;
-    const p = this.P(victim);
-    p.alive = false;
-    p.death = { day: s.day, how: 'exec' };
-    s.medPending = { day: s.day, target: victim, res: s.roles[victim] === 'werewolf' ? 'wolf' : 'human' };
-    let follow = null;
-    const mate = this.loverOf(victim);
-    if (mate && this.P(mate)?.alive) { const q = this.P(mate); q.alive = false; q.death = { day: s.day, how: 'love' }; follow = mate; }
-    s.history.push({ day: s.day, kind: 'exec', victim, lot: vr.lot, follow });
+    this.kill(victim, 'exec');
+    s.medPending = { day: s.day, target: victim, res: seenAs(s.roles[victim]) };
+    const follow = this.cascade([victim])[0] || null;
+    s.history.push({ day: s.day, kind: 'exec', victim, lot: vr.lot, follow, dictator: vr.dictator || null });
     s.phase = 'execution';
     this.anim('exec', { victim, lot: vr.lot, follow });
     this.arm(T.exec, 'afterExec');
@@ -618,12 +759,14 @@ export class Engine {
     const s = this.s, r = s.roles;
     s.nightResult ||= {};
     if (kind === 'divine') {
-      const res = r[tg] === 'werewolf' ? 'wolf' : 'human';
+      const res = seenAs(r[tg]);
       (s.seerLog[p.id] ||= []).push({ day: s.day, target: tg, res });
       s.nightResult[p.id] = { kind, target: tg, res };
     } else if (kind === 'medium' && s.medNow) {
       if (!s.mediumLog.some((x) => x.day === s.medNow.day)) s.mediumLog.push(s.medNow);
       s.nightResult[p.id] = { kind, target: s.medNow.target, res: s.medNow.res };
+    } else if (kind === 'steal') {
+      s.nightResult[p.id] = { kind, target: tg, role: r[tg] };
     } else if (kind === 'cupid') {
       s.nightResult[p.id] = { kind, targets: [p.id, tg] };
     } else {
@@ -638,6 +781,8 @@ export class Engine {
     const sides = [{ side: 'village', p: o.village }, { side: 'wolf', p: o.wolf }];
     if (s.cfg.fox) sides.push({ side: 'fox', p: o.fox || 0.1 });
     if (s.cfg.cupid) sides.push({ side: 'lovers', p: o.lovers || 0.1 });
+    if (s.cfg.vampire || s.cfg.dracula) sides.push({ side: 'vampire', p: o.vampire || 0.1 });
+    if (s.cfg.cult) sides.push({ side: 'cult', p: o.cult || 0.05 });
     return { max: Math.max(5, s.scores[pid] || 0), sides: sides.map((x) => ({ side: x.side, mult: mult(x.p) })) };
   }
 
@@ -647,19 +792,38 @@ export class Engine {
     return L[0] === id ? L[1] : L[0];
   }
 
+  teamOf(id) {
+    const s = this.s;
+    if (s.lovers?.includes(id)) return 'lovers';
+    if ((s.minions || []).includes(id)) return 'wolf';
+    return ROLES[s.roles[id]]?.team;
+  }
+
+  winnersFor(win) {
+    const s = this.s;
+    return s.players.filter((p) => (s.santaLeft || []).includes(p.id) || (win === 'cult' ? s.roles[p.id] === 'cult' : this.teamOf(p.id) === win || (win === 'lovers' && s.roles[p.id] === 'cupid'))).map((p) => p.id);
+  }
+
   checkWin() {
     const s = this.s;
     const al = this.alive();
-    const w = al.filter((p) => s.roles[p.id] === 'werewolf').length;
-    const others = al.length - w;
+    const R = (p) => s.roles[p.id];
+    const w = al.filter((p) => R(p) === 'werewolf').length;
+    const v = al.filter((p) => VAMPS.includes(R(p))).length;
+    const leaders = al.filter((p) => R(p) === 'cult');
+    const bitten = al.filter((p) => (s.bitten || []).includes(p.id)).length;
     let win = null;
-    if (w === 0) win = 'village';
-    else if (w >= others) win = 'wolf';
-    if (win && al.some((p) => s.roles[p.id] === 'fox')) win = 'fox';
+    if (leaders.length && al.every((p) => R(p) === 'cult' || (s.cult || []).includes(p.id))) win = 'cult';
+    else if (al.some((p) => R(p) === 'dracula') && bitten * 2 > al.length) win = 'vampire';
+    else if (w === 0 && v === 0) win = 'village';
+    else if (w === 0 && al.length - v <= v) win = 'vampire';
+    else if (w > 0 && w >= al.length - w) win = 'wolf';
+    if (win && win !== 'cult' && al.some((p) => R(p) === 'fox')) win = 'fox';
     if (win && s.lovers && s.lovers.every((id) => this.P(id)?.alive)) win = 'lovers';
     if (!win) return false;
     this.clearTimer();
     s.winner = win;
+    s.winners = this.winnersFor(win);
     this.applyScores(win);
     s.phase = 'end';
     this.anim('end', { winner: win });
@@ -681,7 +845,7 @@ export class Engine {
       sentAt: Date.now(), endsIn: s.endsAt ? Math.max(0, s.endsAt - Date.now()) : null,
       players: s.players.map((p) => ({ id: p.id, name: p.name, alive: p.alive, host: !!p.host, owner: !!p.owner, bot: !!p.bot, death: p.death, done: done(p) })),
       cfg: s.cfg, cfgAuto: s.cfgAuto, settings: s.settings, candidates: s.candidates, voteResult: vr,
-      skip: s.skip.length, winner: s.winner, reveal: ph === 'end' ? s.roles : null, lovers: ph === 'end' ? s.lovers : null, history: s.history,
+      skip: s.skip.length, winner: s.winner, winners: ph === 'end' ? s.winners : null, minions: ph === 'end' ? s.minions : null, origRoles: ph === 'end' ? s.origRoles : null, reveal: ph === 'end' ? s.roles : null, lovers: ph === 'end' ? s.lovers : null, history: s.history,
       fun: s.fun || null,
       hunter: s.phase === 'hunter' ? s.hunter?.pid : null,
       scores: Object.fromEntries(s.players.map((p) => [p.id, s.scores[p.id] || 0])), round: s.round, lastResult: s.lastResult, pts: ph === 'lobby' ? points(s.cfg) : s.pts,
@@ -702,6 +866,21 @@ export class Engine {
       if (s.phase === 'night') o.packPicks = Object.fromEntries(o.wolves.map((w) => [w, s.acts[w] ?? null]));
     }
     if (role === 'mason') o.masons = ids('mason');
+    if (role === 'immoral') o.foxes = ids('fox');
+    if (role === 'vampire') o.vamps = ids('vampire');
+    if (role === 'dracula') o.dracs = ids('dracula');
+    if (role === 'cult') { o.leaders = ids('cult'); o.members = s.cult || []; }
+    if (role === 'dog') o.master = s.dogMaster?.[pid] || null;
+    if (role === 'santa') o.gifted = s.gifted?.[pid] || [];
+    if (role === 'elder') o.lifespan = this.alive().filter((x) => s.roles[x.id] === 'werewolf').length * 2;
+    if (role === 'dictator') o.canDictate = !s.dictUsed && p.alive && ['day', 'vote'].includes(s.phase);
+    if (role === 'prince' || (s.princeGift || []).includes(pid)) o.princeUsed = (s.princeUsed || []).includes(pid);
+    if ((s.aged || []).includes(pid)) o.lifespan = this.alive().filter((x) => s.roles[x.id] === 'werewolf').length * 2;
+    if ((s.minions || []).includes(pid)) o.minion = true;
+    if (s.gifts?.[pid]) o.gifts = s.gifts[pid];
+    if (s.stolen?.from === pid) o.robbed = s.stolen.role;
+    if (s.stolen?.by === pid) o.stole = s.stolen.role;
+    if (s.origRoles?.[pid] && s.origRoles[pid] !== role) o.origRole = s.origRoles[pid];
     if (s.lovers?.includes(pid)) o.lover = this.loverOf(pid);
     if (role === 'cupid' && s.lovers) o.lovers = s.lovers;
     if (role === 'seer') o.seerLog = s.seerLog[pid] || [];

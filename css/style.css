@@ -980,3 +980,45 @@ main, .top { position: relative; z-index: 1; }
 .pc-tip b{color:var(--gold,#e8c872);font-family:'Shippori Mincho B1',serif;letter-spacing:.06em}
 .pc-tip p{margin:4px 0 0;font-size:14px;line-height:1.75;opacity:.9}
 .pc-tip-ic{font-size:26px;line-height:1;filter:saturate(.6) drop-shadow(0 0 8px rgba(232,170,80,.5))}
+
+/* ---- 陣営ごとの枠の色（2026-11-14：第三陣営を分ける）---- */
+:root { --c-lovers: #d0508a; --c-vampire: #8a3ad0; --c-cult: #1fa39a; }
+.ricon.pic.t-lovers { box-shadow: 0 0 0 1px #000, 0 0 0 3px var(--c-lovers), 0 3px 8px rgba(0, 0, 0, .6); }
+.ricon.pic.t-vampire { box-shadow: 0 0 0 1px #000, 0 0 0 3px var(--c-vampire), 0 3px 8px rgba(0, 0, 0, .6); }
+.ricon.pic.t-cult { box-shadow: 0 0 0 1px #000, 0 0 0 3px var(--c-cult), 0 3px 8px rgba(0, 0, 0, .6); }
+.t-lovers { color: #f0a0c4; border-color: rgba(208, 80, 138, .6); background: rgba(208, 80, 138, .16); }
+.t-vampire { color: #c9a0f0; border-color: rgba(138, 58, 208, .6); background: rgba(138, 58, 208, .16); }
+.t-cult { color: #7fe0d6; border-color: rgba(31, 163, 154, .6); background: rgba(31, 163, 154, .16); }
+.rcard.r-lovers .rcard-name { background: linear-gradient(180deg, #c04a80, #8a2a58); border-top-color: #e07aa8; }
+.rcard.r-lovers .rcard-art { box-shadow: inset 0 0 0 3px var(--c-lovers); }
+.rcard.r-vampire .rcard-name { background: linear-gradient(180deg, #7a3ac0, #4a1a80); border-top-color: #a46ae0; }
+.rcard.r-vampire .rcard-art { box-shadow: inset 0 0 0 3px var(--c-vampire); }
+.rcard.r-cult .rcard-name { background: linear-gradient(180deg, #1f9a90, #0e5f58); border-top-color: #4ac4b8; }
+.rcard.r-cult .rcard-art { box-shadow: inset 0 0 0 3px var(--c-cult); }
+.night-info.t-lovers { border-color: var(--c-lovers); } .night-info.t-vampire { border-color: var(--c-vampire); } .night-info.t-cult { border-color: var(--c-cult); }
+.ic-art.t-lovers { border-color: var(--c-lovers); } .ic-art.t-vampire { border-color: var(--c-vampire); } .ic-art.t-cult { border-color: var(--c-cult); }
+.bs-lovers.on { background: rgba(208, 80, 138, .25); border-color: var(--c-lovers); color: #f0a0c4; }
+.bs-vampire.on { background: rgba(138, 58, 208, .25); border-color: var(--c-vampire); color: #c9a0f0; }
+.bs-cult.on { background: rgba(31, 163, 154, .25); border-color: var(--c-cult); color: #7fe0d6; }
+.bva { background: linear-gradient(90deg, #a46ae0, #6a2aa8); } .lva { color: #c9a0f0; }
+.bcu { background: linear-gradient(90deg, #4ac4b8, #1a7a72); } .lcu { color: #7fe0d6; }
+.win-banner.w-vampire h2 { color: #c9a0f0; } .win-banner.w-cult h2 { color: #7fe0d6; }
+.partners.foxish b .pchip { border-color: var(--c-fox); }
+.partners.vampish b .pchip { border-color: var(--c-vampire); }
+.partners.cultish b .pchip { border-color: var(--c-cult); }
+.partners.note-line { display: block; }
+.partners.note-line b { font-weight: 600; font-size: 14px; }
+.partners.note-line.gift b::before { content: '🎁 '; }
+.banner.old, .banner.revived, .banner.drain, .banner.santa { margin-top: 6px; }
+.banner.revived { border-color: #5ac08a; color: #9ee0b8; }
+.banner.drain.yes { border-color: var(--c-vampire); color: #c9a0f0; }
+.banner.santa { border-color: #d04040; color: #ffb0a8; }
+.exec-line.prince, .exec-line.dict { color: var(--gold, #e8c872); }
+.rr small.orig { display: block; font-size: 11px; opacity: .7; }
+.lv-mark.minion { background: rgba(200, 48, 42, .2); color: #ffaaa3; }
+.dict-btn { margin: 8px 0; }
+.sticky-act { gap: 8px; }
+.banner.revived, .banner.drain, .banner.santa { background: rgba(0, 0, 0, .3); border: 1px solid rgba(255, 255, 255, .15); }
+.banner.drain.no { color: #c8c0d8; }
+.sticky-act:has(.btn + .btn) { display: flex; align-items: stretch; }
+.sticky-act:has(.btn + .btn) .btn.big { flex: 1; }
