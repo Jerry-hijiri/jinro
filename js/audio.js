@@ -365,6 +365,38 @@ const SFX = {
       s.tone(58, tt + 0.22, 0.2, { type: 'sine', gain: 0.38, dest: s.sfx, glide: 38 });
     }
   },
+  // 処刑動画の音楽：刃が落ちる6.25秒に向けて速く・高く・大きくなり、直前で無音→落下の一撃→余韻
+  execCue(s, t) {
+    const D = s.sfx, HIT = 6.25, END = 6.12;
+    // 低い太鼓の刻み（だんだん速く）
+    let tt = t, gap = 0.36, k = 0;
+    while (tt < t + END) {
+      const strong = k % 4 === 0, prog = (tt - t) / END;
+      s.tone(strong ? 70 : 58, tt, 0.28, { type: 'sine', gain: (strong ? 0.42 : 0.22) * (0.5 + prog * 0.7), dest: D, glide: 36 });
+      s.noise(tt, 0.12, { ft: 'lowpass', f: 900, f2: 120, gain: (strong ? 0.16 : 0.07) * (0.5 + prog), dest: D });
+      tt += gap; gap = Math.max(0.15, gap * 0.955); k++;
+    }
+    // 低音の持続と、半音でぶつかりながらせり上がる弦
+    s.tone(NOTE(26), t, END, { type: 'sawtooth', gain: 0.07, dest: D, lp: 260, a: 0.6 });
+    s.tone(NOTE(38), t, END, { type: 'sawtooth', gain: 0.05, dest: D, lp: 420, a: 1.2 });
+    [[50, 52], [51, 53], [57, 59], [62, 65]].forEach(([a0, a1], i) => {
+      const st = t + 0.8 + i * 0.9;
+      s.tone(NOTE(a0), st, END - (st - t), { type: 'sawtooth', gain: 0.022 + i * 0.006, dest: D, lp: 1600 + i * 500, a: 1.4, glide: NOTE(a1), detune: i * 7 });
+    });
+    // 時計の音
+    for (let x = 0.25; x < END; x += 0.5) s.tone(2400, t + x, 0.03, { type: 'square', gain: 0.025, dest: D, lp: 5000 });
+    // 最後の2秒はスネアのロール（大きくなる）
+    let rt = t + 4.1, i = 0;
+    while (rt < t + END) { s.noise(rt, 0.05, { ft: 'bandpass', f: 1800, q: 0.7, gain: 0.04 + i * 0.006, dest: D }); rt += 0.055; i++; }
+    // 直前の吸い込み音
+    s.noise(t + END - 0.9, 0.85, { ft: 'bandpass', f: 300, f2: 4000, q: 1.2, gain: 0.12, a: 0.8, dest: D });
+    // 落下の一撃と余韻（銅鑼）
+    const h = t + HIT;
+    s.tone(NOTE(26), h, 4.5, { type: 'sawtooth', gain: 0.16, dest: D, lp: 380, rev: 0.9 });
+    s.tone(NOTE(33), h, 4.5, { type: 'sawtooth', gain: 0.1, dest: D, lp: 380, rev: 0.9 });
+    s.tone(55, h, 1.2, { type: 'sine', gain: 0.7, dest: D, glide: 28 });
+    s.noise(h, 5, { ft: 'bandpass', f: 520, f2: 180, q: 0.5, gain: 0.22, a: 0.02, rev: 1, dest: D });
+  },
   drumroll(s, t) {
     let tt = t;
     for (let i = 0; i < 34; i++) {

@@ -125,6 +125,8 @@ function playVideo(name, endHtml, fallback, startHtml = '') {
   sound.play(null);
   v.volume = Math.max(0.2, sound.sfxVol);
   v.muted = !sound.sfxOn;
+  // 処刑は動画の音を消し、刃の落下に合わせた緊張感のある音楽を鳴らす
+  if (name === 'exec') { v.muted = true; v.addEventListener('playing', () => sound.sfxPlay('execCue'), { once: true }); }
   v.play().catch(() => { v.muted = true; v.play().catch(() => {}); });
   let hit = false;
   const strike = () => {

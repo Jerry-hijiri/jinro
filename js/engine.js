@@ -285,6 +285,7 @@ export class Engine {
     });
     s.pts = points(s.cfg);
     s.odds = balance(s.cfg);
+    s.gameId = this.room + '-' + Date.now().toString(36); s.reported = false;
     s.bets = {};
     this.anim('intro');
     this.arm(T.intro, 'toRole');
@@ -566,6 +567,8 @@ export class Engine {
       top = keys.filter((k) => counts[k] === max);
     }
     s.voteResult = { votes: Object.entries(s.votes), counts, top, runoff: !!s.candidates, lot: false, victim: null };
+    // 処刑される人が決まったら、票の内訳を見せずにすぐ処刑の演出へ（決選投票・票なしのときだけ結果画面を挟む）
+    if (top.length === 1 || (top.length > 1 && s.runoffDone)) { this.afterVoteResult(); return; }
     s.phase = 'voteResult';
     this.arm(T.voteResult, 'afterVoteResult');
     this.commit();

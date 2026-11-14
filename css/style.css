@@ -931,3 +931,14 @@ main, .top { position: relative; z-index: 1; }
 .night-info .rd-partners { margin-top: 10px; }
 .night-info .rd-partners .partners { margin: 0; }
 .love-death { margin: 6px 0 10px; padding: 10px 12px; border-radius: 10px; background: rgba(176, 74, 124, .22); border: 1px solid rgba(224, 122, 168, .5); color: #f6c6da; font-weight: 700; }
+
+/* トップ：みんなの戦績 */
+.stats-card { display: grid; gap: 10px; }
+.st-h { display: flex; justify-content: space-between; align-items: baseline; gap: 8px; }
+.st-h span { color: var(--muted); font-size: 13px; letter-spacing: .08em; }
+.st-h b { font-family: var(--serif); font-size: 22px; }
+.st-bar .bo { background: linear-gradient(90deg, #2f6fd0, #6b9be6); }
+.st-rows { display: flex; flex-wrap: wrap; gap: 6px 14px; font-size: 13px; justify-content: space-between; }
+.st-rows b { font-size: 16px; }
+.st-rows .lv b { color: #8fc46f; } .st-rows .lw b { color: #e3615a; } .st-rows .lo b { color: #6b9be6; }
+.stats-card .note { margin: 0; }

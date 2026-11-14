@@ -5,6 +5,7 @@ import { Engine } from './engine.js';
 import { Client } from './client.js';
 import { sound } from './audio.js';
 import * as fx from './fx.js';
+import { fetchStats, cachedStats, reportGame } from './stats.js';
 
 const $ = (s, r = document) => r.querySelector(s);
 const esc = (s) => String(s ?? '').replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
@@ -152,6 +153,34 @@ function onUpdate() {
   }
   render();
   checkLove();
+  maybeReport();
+}
+
+// 試合が終わったら主催端末から1回だけ記録を送る（デモ・テストモード・CPU入りは送らない）
+function maybeReport() {
+  const e = app.engine, s = e?.s;
+  if (!s || s.phase !== 'end' || s.reported || !s.winner || !s.gameId || MODE === 'bc' || DEMO) return;
+  if (s.players.some((p) => p.bot)) { s.reported = true; return; }
+  s.reported = 'sending';
+  reportGame({ id: s.gameId, room: e.room, round: s.round || 0, winner: s.winner, n: s.players.length, cfg: Object.entries(s.cfg).filter(([, v]) => v).map(([k, v]) => k + v).join(' ') })
+    .then((ok) => { s.reported = ok ? true : false; try { e.save(); } catch {} });
+}
+
+// トップに出す、みんなの戦績
+let statsLoaded = false;
+function statsCard() {
+  if (!statsLoaded) { statsLoaded = true; fetchStats().then((x) => { if (x) { app.stats = x; render(); } }); }
+  const st = app.stats || cachedStats();
+  if (!st || !st.total) return '';
+  const k = st.known || 0;
+  const pc = (x) => (k ? Math.round((x / k) * 100) : 0);
+  const v = pc(st.village), w = pc(st.wolf), o = k ? 100 - v - w : 0;
+  return `<div class="card stats-card">
+    <div class="st-h"><span>${esc(t('statsTitle'))}</span><b>${esc(t('statsTotal', { n: st.total }))}</b></div>
+    <div class="bal-bar st-bar"><i class="bv" style="width:${v}%"></i><i class="bo" style="width:${o}%"></i><i class="bw" style="width:${w}%"></i></div>
+    <div class="st-rows"><span class="lv">${esc(t('villageSide'))} <b>${v}%</b></span><span class="lw">${esc(t('wolfSide'))} <b>${w}%</b></span><span class="lo">${esc(t('statsOther'))} <b>${o}%</b></span></div>
+    ${k < st.total ? `<p class="note">${esc(t('statsNote', { k }))}</p>` : ''}
+  </div>`;
 }
 
 // 恋人に選ばれたことを、本人のスマホにだけ大きく知らせる（1試合1回）
@@ -331,6 +360,7 @@ function homeView() {
       </div>
       <p class="note">${esc(t('homeNote'))}</p>
     </div>
+    ${statsCard()}
     <div class="guide-btns">
       <button class="btn ghost" data-act="help" data-tab="how">${esc(t('howTo'))}</button>
       <button class="btn ghost" data-act="help" data-tab="roles">${esc(t('rolesGuide'))}</button>
