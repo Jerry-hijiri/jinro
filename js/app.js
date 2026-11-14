@@ -367,6 +367,7 @@ function homeView() {
       <button class="btn ghost" data-act="help" data-tab="how">${esc(t('howTo'))}</button>
       <button class="btn ghost" data-act="help" data-tab="roles">${esc(t('rolesGuide'))}</button>
     </div>
+    <nav class="site-links"><a href="/about/">遊び方と役職</a><a href="/privacy/">プライバシーポリシー</a><a href="/terms/">利用規約</a></nav>
   </section>`;
 }
 
