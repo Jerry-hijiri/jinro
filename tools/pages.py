@@ -25,7 +25,7 @@ NAV = '<nav class="top"><a href="/">▶ 遊ぶ</a><a href="/about/">遊び方</a
 FOOT = '<footer>蝋燭人狼 — 運営：SEKIYA.so（大分県）' + (f' ／ お問い合わせ：<a href="mailto:{CONTACT}">{CONTACT}</a>' if CONTACT else '') + '</footer>'
 def page(path, title, desc, body):
     os.makedirs(path, exist_ok=True)
-    open(f'{path}/index.html', 'w').write(f"""<!doctype html><html lang="ja"><head><meta charset="utf-8">
+    open(f'{path}/index.html', 'w').write(f"""<!doctype html><html lang="ja"><head><meta charset="utf-8"><meta name="google-adsense-account" content="ca-pub-3774532248262939">
 <meta name="viewport" content="width=device-width,initial-scale=1"><title>{title}｜蝋燭人狼</title>
 <meta name="description" content="{desc}"><link rel="canonical" href="https://rousoku-jinro.uk/{path}/"><meta property="og:title" content="{title}｜蝋燭人狼"><meta property="og:description" content="{desc}"><meta property="og:image" content="https://rousoku-jinro.uk/img/og.jpg"><meta name="twitter:card" content="summary_large_image">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
