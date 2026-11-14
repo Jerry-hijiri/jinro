@@ -1,4 +1,4 @@
-// 月夜の人狼：全端末の対戦記録を集める口（Google Apps Script のウェブアプリ）
+// 蝋燭人狼：全端末の対戦記録を集める口（Google Apps Script のウェブアプリ）
 // 公開：自分として実行／全員がアクセス可。シートIDはスクリプトのプロパティ SHEET_ID に保存。
 const WINNERS = ['village', 'wolf', 'fox', 'lovers', ''];
 

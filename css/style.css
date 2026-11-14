@@ -967,3 +967,9 @@ main, .top { position: relative; z-index: 1; }
 @keyframes icIn { to { opacity: 1; transform: none; } }
 .fx-intro .intro-v { object-position: 30% 50%; }
 @media (max-aspect-ratio: 1/1) { .fx-intro .intro-v { object-position: 14% 50%; } }
+
+/* PCの盤面：議論の残り時間を大きく */
+.gm-timer { display: grid; justify-items: center; gap: 4px; margin: 4px 0 18px; }
+.gm-timer span { color: var(--muted); font-size: clamp(14px, 1.6vw, 20px); letter-spacing: .2em; }
+.gm-timer .timer { font-size: clamp(96px, 17vw, 260px); line-height: 1; padding: 10px 40px; border-radius: 24px; color: #fff3cf; text-shadow: 0 0 30px rgba(232, 200, 114, .35); }
+.gm-timer .timer.urgent { color: #ff6b5e; }

@@ -382,7 +382,7 @@ export class Engine {
   }
   run(name) {
     const f = {
-      toRole: () => { this.s.phase = 'role'; this.s.ready = []; this.commit(); },
+      toRole: () => { if (this.s.phase !== 'intro') return; this.s.phase = 'role'; this.s.ready = []; this.commit(); },
       afterMorning: () => this.afterMorning(),
       startVote: () => this.startVote(),
       afterVoteResult: () => this.afterVoteResult(),

@@ -881,8 +881,8 @@ function gmBoard(pub) {
   return `<section class="gm">
     <div class="gm-head ${ph}">
       <div><h2>${esc(title)}</h2><p>${esc(sub)}</p></div>
-      ${ph === 'day' ? '<div class="timer big" data-deadline="1">--:--</div>' : ''}
     </div>
+    ${ph === 'day' ? `<div class="gm-timer"><span>${esc(t('discussLeft'))}</span><div class="timer" data-deadline="1">--:--</div></div>` : ''}
     ${ph === 'day' || ph === 'morning' ? lastNightBanner(pub) : ''}
     ${ph === 'voteResult' || ph === 'execution' ? tallyHtml(pub) : ''}
     ${grid(pub.players, { roles, showDone: ['night', 'vote', 'role'].includes(ph) || false, extra: ph === 'role' ? (p) => `<span class="done ${p.done ? 'y' : ''}">${p.done ? '✓' : '…'}</span>` : null })}
