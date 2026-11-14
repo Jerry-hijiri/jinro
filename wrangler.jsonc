@@ -1,0 +1,10 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "rousoku-jinro",
+  "compatibility_date": "2026-11-13",
+  "assets": { "directory": "." },
+  "routes": [
+    { "pattern": "rousoku-jinro.uk", "custom_domain": true },
+    { "pattern": "www.rousoku-jinro.uk", "custom_domain": true }
+  ]
+}

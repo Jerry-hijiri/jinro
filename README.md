@@ -2,7 +2,8 @@
 
 ブラウザだけで遊べる人狼ゲーム。オーナーが部屋を作り、参加者は画面のQRを読み取って参加します。
 
-- 遊ぶ: https://jerry-hijiri.github.io/jinro/
+- 遊ぶ: https://rousoku-jinro.uk/ （旧 https://jerry-hijiri.github.io/jinro/ は gh-pages ブランチで転送）
+- 公開: `npx wrangler deploy`（Cloudflare Workers の静的アセット。除外は .assetsignore）
 - 言語: 日本語 / English / 한국어 / 中文（端末ごとに切替）
 - 役職: 村人・人狼・占い師・霊媒師・騎士・共有者・狂人・妖狐（人数に応じたおすすめ構成と有利度の目安つき）
 - 進行: 開幕演出 → 役職確認 → 夜（初日の襲撃なし）→ 朝 → 議論（タイマー）→ 投票（決選投票・くじ）→ 処刑演出 → 勝敗
