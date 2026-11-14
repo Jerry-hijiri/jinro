@@ -1,7 +1,7 @@
 # 説明ページ（遊び方・プライバシー・利用規約）を生成する。 python3 tools/pages.py
 import json, subprocess, os, html
 os.chdir(os.path.join(os.path.dirname(__file__), '..'))
-CONTACT = os.environ.get('JINRO_CONTACT', '')
+CONTACT = os.environ.get('JINRO_CONTACT', 'hijiri.teramoto@sekiya-so.com')
 js = r"""
 globalThis.localStorage={getItem(){},setItem(){}};globalThis.document={documentElement:{}};
 const m=await import('./js/i18n.js'); const R=await import('./js/roles.js'); m.setLang('ja');
